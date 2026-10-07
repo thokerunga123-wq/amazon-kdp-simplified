@@ -11,8 +11,8 @@
 
 const APP_CONFIG = {
   // Supabase Configuration (Replace with your actual Supabase credentials)
-  SUPABASE_URL: "https://YOUR_SUPABASE_PROJECT_ID.supabase.co",
-  SUPABASE_ANON_KEY: "YOUR_SUPABASE_ANON_KEY",
+  SUPABASE_URL: "https://njfqmubgqfliijgairsj.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_5dRHSihnq1mCB4D33VHgkw_KFGb9NuI",
 
   // Selar Payment Link
   SELAR_CHECKOUT_URL: "https://selar.co/m/amazon-kdp-simplified",
