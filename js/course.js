@@ -92,103 +92,105 @@ async function initDashboard() {
   const user = await requireAuth();
   if (!user) return;
 
-  const welcomeNameEl = document.getElementById('dash-student-name');
-  if (welcomeNameEl) {
-    welcomeNameEl.textContent = user.full_name || 'Student';
-  }
+  const name = (user.full_name || 'Student').replace(/\s*\(admin\)\s*/i, '').trim() || 'Student';
+  const firstName = name.split(/\s+/)[0];
+  const initials = name.split(/\s+/).filter(Boolean).map(p => p[0]).slice(0, 2).join('').toUpperCase() || 'S';
 
-  // Handle Enrollment Inactive Banner
-  const enrollmentNotice = document.getElementById('enrollment-status-alert');
-  if (enrollmentNotice) {
-    if (user.enrollment_status !== 'active' && !user.is_admin) {
-      enrollmentNotice.style.display = 'block';
-      enrollmentNotice.innerHTML = `
-        <div class="form-alert alert-error" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
-          <div>
-            <strong>Access Pending:</strong> Your account is registered, but course access has not been activated yet.
-            <div style="font-size:0.85rem; margin-top:0.25rem;">
-              If you have already paid on Selar, please WhatsApp the admin with your payment receipt for instant activation.
-            </div>
-          </div>
-          <div style="display:flex; gap:0.5rem;">
-            <a href="${APP_CONFIG.WHATSAPP_SUPPORT_URL}" target="_blank" class="btn btn-whatsapp btn-sm">WhatsApp Admin</a>
-          </div>
+  const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+  setText('dash-student-name', firstName);
+  setText('dash-user-name', name);
+  setText('dash-avatar', initials);
+
+  const adminLink = document.getElementById('dash-admin-link');
+  if (adminLink) adminLink.hidden = !user.is_admin;
+
+  // Access pending notice
+  const notice = document.getElementById('enrollment-status-alert');
+  const hasAccess = user.is_admin || user.enrollment_status === 'active';
+  if (notice) {
+    notice.hidden = hasAccess;
+    if (!hasAccess) {
+      notice.innerHTML = `
+        <div>
+          <strong>Your access is being activated.</strong>
+          <span>Already paid on Selar? Send your receipt on WhatsApp and we'll switch it on.</span>
         </div>
+        <a href="${APP_CONFIG.WHATSAPP_SUPPORT_URL}" target="_blank" rel="noopener noreferrer" class="admin-btn-solid dash-alert-btn">Message us</a>
       `;
-    } else {
-      enrollmentNotice.style.display = 'none';
     }
   }
 
-  // Fetch lessons (latest titles/notes from the database) and progress
+  // Lessons (latest from the database) + progress
   await loadCourseLessons();
   const completedNumbers = await getStudentProgress(user.id);
-  const totalLessons = APP_CONFIG.LESSONS_DATA.length;
-  const completedCount = completedNumbers.length;
+  const lessons = APP_CONFIG.LESSONS_DATA;
+  const totalLessons = lessons.length;
+  const completedCount = lessons.filter(l => completedNumbers.includes(l.number)).length;
   const percent = Math.round((completedCount / totalLessons) * 100);
 
-  // Update Progress Bar & Counter
-  const percentEl = document.getElementById('progress-percent');
-  const countEl = document.getElementById('progress-count');
-  const barFillEl = document.getElementById('progress-bar-fill');
+  // Progress ring
+  setText('progress-percent', `${percent}%`);
+  setText('progress-count', `${completedCount} of ${totalLessons} lessons completed`);
+  setText('progress-sub',
+    completedCount === 0 ? "Let's get your first book started."
+    : completedCount === totalLessons ? 'Course complete. Well done!'
+    : `${totalLessons - completedCount} lesson${totalLessons - completedCount === 1 ? '' : 's'} to go.`);
+  const ring = document.getElementById('dash-progress-ring');
+  if (ring) ring.style.setProperty('--pct', percent);
+  setText('dash-lessons-meta', `${totalLessons} lessons`);
+
+  // Next lesson
+  const next = lessons.find(l => !completedNumbers.includes(l.number)) || lessons[0];
   const continueBtn = document.getElementById('btn-continue-learning');
+  if (continueBtn) {
+    continueBtn.href = `lesson.html?lesson=${next.number}`;
+    continueBtn.classList.toggle('is-locked', !hasAccess);
+    setText('dash-continue-label',
+      completedCount === 0 ? 'Start here'
+      : completedCount === totalLessons ? 'Watch again'
+      : `Up next · Lesson ${next.number} of ${totalLessons}`);
+    setText('dash-continue-title', next.title);
+    setText('dash-continue-desc', next.description || '');
+    setText('dash-continue-cta-text', completedCount === 0 ? 'Start lesson 1' : (completedCount === totalLessons ? 'Review course' : 'Continue'));
 
-  if (percentEl) percentEl.textContent = `${percent}%`;
-  if (countEl) countEl.textContent = `${completedCount} of ${totalLessons} Completed`;
-  if (barFillEl) barFillEl.style.width = `${percent}%`;
-
-  // Find next uncompleted lesson
-  let nextLesson = 1;
-  for (let i = 1; i <= totalLessons; i++) {
-    if (!completedNumbers.includes(i)) {
-      nextLesson = i;
-      break;
+    const thumb = document.getElementById('dash-continue-thumb');
+    const thumbUrl = getVideoThumbnail(next.wistiaId);
+    if (thumb) {
+      const old = thumb.querySelector('img');
+      if (old) old.remove();
+      if (thumbUrl) {
+        const img = document.createElement('img');
+        img.src = thumbUrl;
+        img.alt = '';
+        img.onerror = () => img.remove();
+        thumb.prepend(img);
+      }
     }
   }
 
-  if (continueBtn) {
-    continueBtn.href = `lesson.html?lesson=${nextLesson}`;
-    continueBtn.innerHTML = `
-      <span>${completedCount === 0 ? 'Start Lesson 1' : (completedCount === totalLessons ? 'Review Course' : `Continue Lesson ${nextLesson}`)}</span>
-      ${typeof ICONS !== 'undefined' ? ICONS.arrowRight : '→'}
+  // Lesson rows
+  const list = document.getElementById('dashboard-lessons-list');
+  if (!list) return;
+  list.innerHTML = '';
+  const checkIcon = typeof ICONS !== 'undefined' ? ICONS.check : '✓';
+
+  lessons.forEach(lesson => {
+    const done = completedNumbers.includes(lesson.number);
+    const isNext = lesson.number === next.number && completedCount !== totalLessons;
+    const row = document.createElement('a');
+    row.href = `lesson.html?lesson=${lesson.number}`;
+    row.className = `dash-lesson-row${done ? ' is-done' : ''}${isNext ? ' is-next' : ''}`;
+    row.innerHTML = `
+      <span class="dash-lesson-badge">${done ? checkIcon : String(lesson.number).padStart(2, '0')}</span>
+      <span class="dash-lesson-text">
+        <span class="dash-lesson-title">${escapeHtml(lesson.title)}</span>
+        <span class="dash-lesson-meta">${escapeHtml(lesson.duration)}</span>
+      </span>
+      <span class="dash-lesson-state">${done ? 'Completed' : (isNext ? 'Up next' : '')}</span>
+      <svg class="svg-icon dash-lesson-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
     `;
-  }
-
-  // Render Lessons List
-  const lessonsContainer = document.getElementById('dashboard-lessons-list');
-  if (lessonsContainer) {
-    lessonsContainer.innerHTML = '';
-
-    APP_CONFIG.LESSONS_DATA.forEach(lesson => {
-      const isCompleted = completedNumbers.includes(lesson.number);
-      const card = document.createElement('div');
-      card.className = 'dash-lesson-card';
-
-      card.innerHTML = `
-        <div class="dash-lesson-left">
-          <div class="dash-lesson-badge ${isCompleted ? 'completed' : ''}">
-            ${isCompleted ? (typeof ICONS !== 'undefined' ? ICONS.check : '✓') : String(lesson.number).padStart(2, '0')}
-          </div>
-          <div class="dash-lesson-details">
-            <h3>Lesson ${lesson.number}: ${escapeHtml(lesson.title)}</h3>
-            <p>${escapeHtml(lesson.description)}</p>
-            <div class="dash-lesson-meta">
-              <span class="icon-inline">${typeof ICONS !== 'undefined' ? ICONS.clock : ''}</span>
-              <span>${escapeHtml(lesson.duration)}</span>
-              <span>&bull;</span>
-              <span>${isCompleted ? '<span style="color:var(--status-success); font-weight:600;">Completed</span>' : 'Not started'}</span>
-            </div>
-          </div>
-        </div>
-        <div>
-          <a href="lesson.html?lesson=${lesson.number}" class="btn ${isCompleted ? 'btn-secondary' : 'btn-primary'} btn-sm">
-            ${isCompleted ? 'Watch Again' : 'Start Lesson'}
-          </a>
-        </div>
-      `;
-      lessonsContainer.appendChild(card);
-    });
-  }
+    list.appendChild(row);
+  });
 }
 
 // -----------------------------------------------------------------------------
@@ -387,23 +389,17 @@ function renderWistiaPlayer(lesson) {
     return;
   }
 
+  const embedUrl = getVideoEmbedUrl(wistiaId);
   container.innerHTML = `
-    <div class="wistia_responsive_padding" style="padding:56.25% 0 0 0;position:relative;">
-      <div class="wistia_responsive_wrapper" style="height:100%;left:0;position:absolute;top:0;width:100%;">
-        <iframe 
-          src="https://fast.wistia.net/embed/iframe/${encodeURIComponent(wistiaId)}?videoFoam=true" 
-          title="${escapeHtml(lesson.title)}" 
-          allow="autoplay; fullscreen" 
-          allowtransparency="true" 
-          frameborder="0" 
-          scrolling="no" 
-          class="wistia_embed" 
-          name="wistia_embed" 
-          width="100%" 
-          height="100%">
-        </iframe>
-      </div>
-    </div>
+    <iframe
+      class="lesson-video-frame"
+      src="${embedUrl}"
+      title="${escapeHtml(lesson.title)}"
+      allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+      allowfullscreen
+      referrerpolicy="strict-origin-when-cross-origin"
+      frameborder="0">
+    </iframe>
   `;
 }
 

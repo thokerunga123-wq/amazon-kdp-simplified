@@ -669,7 +669,7 @@ function renderAdminLessons() {
     row.innerHTML = `
       <div class="admin-lesson-thumb ${hasVideo ? 'has-video' : ''}">
         ${hasVideo
-          ? `<img src="https://fast.wistia.com/embed/medias/${encodeURIComponent(lesson.wistiaId)}/swatch" alt="" loading="lazy" onerror="this.remove()">
+          ? `<img src="${getVideoThumbnail(lesson.wistiaId)}" alt="" loading="lazy" onerror="this.remove()">
              <span class="admin-lesson-play"><svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg></span>`
           : `<span class="admin-lesson-num">${String(lesson.number).padStart(2, '0')}</span>`}
       </div>
@@ -681,7 +681,7 @@ function renderAdminLessons() {
         <div class="admin-lesson-meta">
           <span>${escapeHtml(lesson.duration)}</span>
           ${hasVideo
-            ? `<span class="admin-video-tag is-set"><i class="dot dot-green"></i>Video added</span>`
+            ? `<span class="admin-video-tag is-set"><i class="dot dot-green"></i>${getVideoSourceLabel(lesson.wistiaId)} video</span>`
             : `<span class="admin-video-tag"><i class="dot dot-amber"></i>No video yet</span>`}
         </div>
       </div>
@@ -698,6 +698,9 @@ function openLessonEditor(lessonNumber) {
   const modalEl = document.getElementById('student-modal-body');
   if (!lesson || !modalEl) return;
   const currentId = isRealVideoId(lesson.wistiaId) ? lesson.wistiaId : '';
+  const currentLink = !currentId ? '' : isYouTubeVideo(currentId)
+    ? `https://youtu.be/${currentId.slice(3)}`
+    : `https://fast.wistia.net/embed/iframe/${currentId}`;
 
   modalEl.innerHTML = `
     <div class="admin-modal-title">
@@ -707,9 +710,9 @@ function openLessonEditor(lessonNumber) {
 
     <form id="lesson-edit-form" class="admin-form" novalidate>
       <div class="form-group">
-        <label class="form-label" for="le-video">Wistia video</label>
-        <input type="text" id="le-video" class="form-input" placeholder="Paste the Wistia link, embed code or video ID" value="${escapeHtml(currentId)}" autocomplete="off" spellcheck="false">
-        <span class="form-help" id="le-video-help">In Wistia open the video, click <strong>Share</strong> and copy the link. A link, embed code or 10-character ID all work.</span>
+        <label class="form-label" for="le-video">Lesson video</label>
+        <input type="text" id="le-video" class="form-input" placeholder="Paste a YouTube or Wistia link or embed code" value="${escapeHtml(currentLink)}" autocomplete="off" spellcheck="false">
+        <span class="form-help" id="le-video-help">Paste a <strong>YouTube</strong> or <strong>Wistia</strong> link, or the embed code from their Share button.</span>
       </div>
 
       <div class="admin-video-preview" id="le-preview"></div>
@@ -754,18 +757,21 @@ function openLessonEditor(lessonNumber) {
 
   const updatePreview = () => {
     const raw = videoInput.value.trim();
-    const id = parseWistiaId(raw);
+    const id = parseVideoInput(raw);
     videoInput.classList.toggle('is-invalid', Boolean(raw) && !id);
     if (raw && !id) {
-      help.innerHTML = '<span class="admin-error-text">That doesn\'t look like a Wistia link or ID. Copy the link from Wistia\'s Share button.</span>';
+      help.innerHTML = '<span class="admin-error-text">That doesn\'t look like a YouTube or Wistia video. Copy the link or embed code from the Share button.</span>';
       preview.innerHTML = '';
+      preview.dataset.id = '';
       return;
     }
-    help.innerHTML = id ? `Video ID: <strong>${escapeHtml(id)}</strong>` : defaultHelp;
-    if (!id) { preview.innerHTML = ''; return; }
+    help.innerHTML = id
+      ? `<span class="admin-video-tag is-set"><i class="dot dot-green"></i>${getVideoSourceLabel(id)} video found</span> &nbsp;ID: <strong>${escapeHtml(isYouTubeVideo(id) ? id.slice(3) : id)}</strong>`
+      : defaultHelp;
+    if (!id) { preview.innerHTML = ''; preview.dataset.id = ''; return; }
     if (preview.dataset.id === id) return;
     preview.dataset.id = id;
-    preview.innerHTML = `<iframe src="https://fast.wistia.net/embed/iframe/${encodeURIComponent(id)}?videoFoam=true" title="Video preview" allow="autoplay; fullscreen" frameborder="0"></iframe>`;
+    preview.innerHTML = `<iframe src="${getVideoEmbedUrl(id)}" title="Video preview" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" frameborder="0"></iframe>`;
   };
   videoInput.addEventListener('input', updatePreview);
   updatePreview();
@@ -791,9 +797,9 @@ function openLessonEditor(lessonNumber) {
 
 async function saveLesson(lessonNumber) {
   const raw = document.getElementById('le-video').value.trim();
-  const videoId = raw ? parseWistiaId(raw) : null;
+  const videoId = raw ? parseVideoInput(raw) : null;
   if (raw && !videoId) {
-    showToast("Please paste a valid Wistia link or video ID.", "error");
+    showToast("Please paste a valid YouTube or Wistia link or embed code.", "error");
     return;
   }
   const title = document.getElementById('le-title').value.trim();

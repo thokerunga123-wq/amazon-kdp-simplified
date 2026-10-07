@@ -19,19 +19,42 @@ function escapeHtml(text) {
     .replace(/'/g, "&#39;");
 }
 
-/** True when a Wistia ID is a real ID and not a "WISTIA_VIDEO_ID_x" placeholder */
+/**
+ * Lesson videos are stored in the lessons.wistia_video_id column as:
+ *   - a Wistia ID   e.g. "8xbijio4bb"
+ *   - a YouTube ID  prefixed with "yt:"  e.g. "yt:z766zE9dfps"
+ * "WISTIA_VIDEO_ID_n" placeholders mean "no video yet".
+ */
 function isRealVideoId(id) {
   return Boolean(id) && !String(id).startsWith('WISTIA_VIDEO_ID');
 }
 
+function isYouTubeVideo(stored) {
+  return String(stored || '').startsWith('yt:');
+}
+
 /**
- * Accepts a bare Wistia ID or anything copied from Wistia (share link, embed
- * code, iframe URL) and returns the 10-character hashed ID, or null.
+ * Accepts anything copied from YouTube or Wistia (link, share link, embed code,
+ * iframe, or a bare ID) and returns the value to store, or null if not recognised.
  */
-function parseWistiaId(input) {
+function parseVideoInput(input) {
   if (!input) return null;
   const value = String(input).trim();
-  const patterns = [
+
+  // YouTube (IDs are case-sensitive, 11 chars)
+  const ytPatterns = [
+    /youtube(?:-nocookie)?\.com\/(?:embed|shorts|live|v)\/([A-Za-z0-9_-]{11})/,
+    /youtube\.com\/watch\?(?:[^"'\s]*&)?v=([A-Za-z0-9_-]{11})/,
+    /youtu\.be\/([A-Za-z0-9_-]{11})/,
+    /^([A-Za-z0-9_-]{11})$/
+  ];
+  for (const re of ytPatterns) {
+    const m = value.match(re);
+    if (m) return `yt:${m[1]}`;
+  }
+
+  // Wistia (10 chars, lowercase)
+  const wistiaPatterns = [
     /media-id=["']?([a-z0-9]{10})/i,
     /wistia\.(?:com|net)\/(?:medias|embed\/iframe|embed\/medias)\/([a-z0-9]{10})/i,
     /wistia\.(?:com|net)\/embed\/([a-z0-9]{10})\.js/i,
@@ -39,11 +62,39 @@ function parseWistiaId(input) {
     /wvideo=([a-z0-9]{10})/i,
     /^([a-z0-9]{10})$/i
   ];
-  for (const re of patterns) {
+  for (const re of wistiaPatterns) {
     const m = value.match(re);
     if (m) return m[1].toLowerCase();
   }
   return null;
+}
+
+/** Kept for older code paths */
+function parseWistiaId(input) {
+  const v = parseVideoInput(input);
+  return v && !isYouTubeVideo(v) ? v : null;
+}
+
+function getVideoEmbedUrl(stored) {
+  if (!isRealVideoId(stored)) return null;
+  if (isYouTubeVideo(stored)) {
+    const id = encodeURIComponent(stored.slice(3));
+    return `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1`;
+  }
+  return `https://fast.wistia.net/embed/iframe/${encodeURIComponent(stored)}?videoFoam=true`;
+}
+
+function getVideoThumbnail(stored) {
+  if (!isRealVideoId(stored)) return null;
+  if (isYouTubeVideo(stored)) {
+    return `https://i.ytimg.com/vi/${encodeURIComponent(stored.slice(3))}/hqdefault.jpg`;
+  }
+  return `https://fast.wistia.com/embed/medias/${encodeURIComponent(stored)}/swatch`;
+}
+
+function getVideoSourceLabel(stored) {
+  if (!isRealVideoId(stored)) return '';
+  return isYouTubeVideo(stored) ? 'YouTube' : 'Wistia';
 }
 
 function getDemoLessonOverrides() {
