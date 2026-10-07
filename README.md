@@ -75,6 +75,33 @@ const APP_CONFIG = {
 
 ---
 
+## 🧪 Testing & Demo Accounts
+
+The project includes built-in test accounts that work immediately in Demo Mode:
+
+### 🛡️ Instructor / Administrator Portal
+* **URL:** `index.html` or `admin.html`
+* **Email:** `admin@example.com`
+* **Password:** `adminpassword`
+* **Features:**
+  * Auto-redirects to `admin.html` upon login
+  * **"+ Generate Student Credentials"** modal to create student accounts for paid Selar customers
+  * **"Copy WhatsApp Message"** button with pre-formatted welcome text & login details
+  * **1-Device Lock Monitoring** and **"Reset Device"** button if a student gets a new laptop
+  * Instant **Activate / Deactivate** toggles
+
+### 🎓 Student Portal & Learning Dashboard
+* **URL:** `index.html`
+* **Email:** `student@example.com`
+* **Password:** `password123`
+* **Features:**
+  * Auto-redirects to `dashboard.html`
+  * Locks account to current device fingerprint upon first login
+  * 10 video lessons & syllabus progression
+  * Lesson player (`lesson.html`) with Wistia integration, lesson completion tracking, and bonus downloads
+
+---
+
 ## 🗄️ Setting Up Supabase Database
 
 1. Create a free account at [Supabase.com](https://supabase.com) and create a new project.
