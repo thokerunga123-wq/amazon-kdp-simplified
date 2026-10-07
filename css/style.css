@@ -4070,3 +4070,71 @@ a, button, input, select, textarea {
     font-size: 16px !important;
   }
 }
+
+/* Admin: lesson ordering + header actions */
+.admin-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.admin-lesson-order {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.admin-order-btn {
+  width: 30px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid var(--border-dark);
+  background: #151518;
+  color: var(--text-secondary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.admin-order-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.admin-order-btn:hover:not(:disabled) {
+  color: var(--accent-yellow);
+  border-color: rgba(245, 197, 66, 0.45);
+}
+
+.admin-order-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+@media (max-width: 600px) {
+  .admin-head-actions {
+    width: 100%;
+  }
+
+  .admin-head-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .admin-lesson-order {
+    gap: 0.3rem;
+  }
+
+  .admin-order-btn {
+    width: 34px;
+    height: 32px;
+  }
+
+  .admin-lesson-thumb {
+    display: none;
+  }
+}
