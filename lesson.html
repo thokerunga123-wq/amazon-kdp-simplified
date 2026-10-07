@@ -40,8 +40,14 @@
     <!-- Left Sidebar: Lessons Navigation -->
     <aside class="player-sidebar" aria-label="Course Lessons">
       <div class="sidebar-header">
-        <h3 style="font-size:0.875rem; font-weight:700; letter-spacing:0.04em;">Course Curriculum</h3>
-        <span style="font-size:0.75rem; color:var(--text-secondary-dark);">10 Lessons</span>
+        <div class="sidebar-title-row">
+          <h3>Course Curriculum</h3>
+          <span class="sidebar-count">10 Lessons</span>
+        </div>
+        <div class="sidebar-progress">
+          <div class="sidebar-progress-track"><div id="sidebar-progress-fill" class="sidebar-progress-fill"></div></div>
+          <span id="sidebar-progress-text">0 of 10 completed</span>
+        </div>
       </div>
       
       <div id="player-lessons-list">
@@ -84,6 +90,11 @@
 
         <!-- Lesson Text Information -->
         <div class="lesson-info-box">
+          <div class="lesson-meta-chips">
+            <span id="lesson-chip-number" class="lesson-chip lesson-chip-accent">Lesson 1</span>
+            <span id="lesson-chip-duration" class="lesson-chip"></span>
+            <span id="lesson-chip-status" class="lesson-chip"></span>
+          </div>
           <h1 id="player-lesson-title">Loading Lesson...</h1>
           <p id="player-lesson-desc" class="lesson-desc"></p>
         </div>
