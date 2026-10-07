@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Course Player | Amazon KDP Simplified</title>
   <meta name="description" content="Watch video lessons and mark progress in Amazon KDP Simplified.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -70,12 +70,12 @@
         <!-- Navigation Buttons & Mark Complete -->
         <div class="player-nav-controls">
           <div style="display:flex; gap:0.5rem;">
-            <button id="btn-prev-lesson" class="btn btn-secondary btn-sm" disabled>
+            <button id="btn-prev-lesson" class="btn btn-secondary btn-sm" aria-label="Previous lesson" disabled>
               <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-              <span>Previous</span>
+              <span class="nav-btn-label">Previous</span>
             </button>
-            <button id="btn-next-lesson" class="btn btn-secondary btn-sm">
-              <span>Next</span>
+            <button id="btn-next-lesson" class="btn btn-secondary btn-sm" aria-label="Next lesson">
+              <span class="nav-btn-label">Next</span>
               <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
             </button>
           </div>
