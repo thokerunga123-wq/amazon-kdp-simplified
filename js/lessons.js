@@ -32,7 +32,9 @@ function parseWistiaId(input) {
   if (!input) return null;
   const value = String(input).trim();
   const patterns = [
+    /media-id=["']?([a-z0-9]{10})/i,
     /wistia\.(?:com|net)\/(?:medias|embed\/iframe|embed\/medias)\/([a-z0-9]{10})/i,
+    /wistia\.(?:com|net)\/embed\/([a-z0-9]{10})\.js/i,
     /wistia_async_([a-z0-9]{10})/i,
     /wvideo=([a-z0-9]{10})/i,
     /^([a-z0-9]{10})$/i

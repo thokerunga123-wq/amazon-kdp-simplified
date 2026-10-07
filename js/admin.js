@@ -708,7 +708,7 @@ function openLessonEditor(lessonNumber) {
     <form id="lesson-edit-form" class="admin-form" novalidate>
       <div class="form-group">
         <label class="form-label" for="le-video">Wistia video</label>
-        <input type="text" id="le-video" class="form-input" placeholder="Paste the Wistia link or video ID" value="${escapeHtml(currentId)}" autocomplete="off" spellcheck="false">
+        <input type="text" id="le-video" class="form-input" placeholder="Paste the Wistia link, embed code or video ID" value="${escapeHtml(currentId)}" autocomplete="off" spellcheck="false">
         <span class="form-help" id="le-video-help">In Wistia open the video, click <strong>Share</strong> and copy the link. A link, embed code or 10-character ID all work.</span>
       </div>
 
