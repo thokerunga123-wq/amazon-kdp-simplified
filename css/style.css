@@ -3744,3 +3744,7 @@ html,
 .login-device-note svg {
   margin-top: 0.2rem;
 }
+
+.admin-device.is-full {
+  color: #FCD34D;
+}
