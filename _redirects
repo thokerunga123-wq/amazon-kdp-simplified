@@ -1,0 +1,14 @@
+# Netlify Clean URL & Routing Rules
+/login               /index.html             301
+/register            /register.html          200
+/dashboard           /dashboard.html         200
+/lesson              /lesson.html            200
+/profile             /profile.html           200
+/admin               /admin.html             200
+/course              /course.html            200
+/about               /about.html             200
+/faq                 /faq.html               200
+/contact             /contact.html           200
+/terms               /terms.html             200
+/privacy             /privacy.html           200
+/forgot-password     /forgot-password.html   200

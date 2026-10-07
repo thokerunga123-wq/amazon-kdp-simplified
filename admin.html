@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard & Student Management | Amazon KDP Simplified</title>
+  <meta name="description" content="Administrator portal for managing student enrollments, course access, and activation.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23F5C542'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/></svg>">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="admin.html" class="brand-logo">
+        <span class="icon-inline" style="color:var(--accent-yellow);">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        </span>
+        <span>Amazon <span class="logo-accent">KDP</span> Simplified</span>
+        <span class="logo-badge" style="background:rgba(239, 68, 68, 0.12); color:#FCA5A5; border-color:rgba(239,68,68,0.25);">Admin Portal</span>
+      </a>
+
+      <nav class="desktop-nav" aria-label="Admin Navigation">
+        <a href="admin.html" class="nav-link active">Students</a>
+        <a href="dashboard.html" class="nav-link">Student View</a>
+        <a href="index.html" class="nav-link">Login Page</a>
+      </nav>
+
+      <div class="nav-actions">
+        <span style="font-size:0.85rem; color:#A3A3A3;">Admin: <strong id="admin-user-name" style="color:#FFF;">Instructor</strong></span>
+        <button onclick="logoutUser()" class="btn btn-secondary btn-sm">Log Out</button>
+      </div>
+
+      <button class="hamburger-btn" aria-label="Toggle navigation menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Mobile Drawer -->
+    <div class="mobile-nav-drawer">
+      <div class="mobile-nav-links">
+        <a href="admin.html" class="nav-link active">Student Management</a>
+        <a href="dashboard.html" class="nav-link">Student View</a>
+        <a href="index.html" class="nav-link">Login Page</a>
+      </div>
+      <div class="mobile-nav-actions">
+        <button onclick="logoutUser()" class="btn btn-secondary btn-block">Log Out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="section-sm">
+    <div class="container">
+      
+      <!-- Top Title Bar with Action Button -->
+      <div style="margin-bottom:2rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+        <div>
+          <h1 style="font-size:1.9rem; margin-bottom:0.25rem;">Student Access & Device Management</h1>
+          <p style="color:var(--text-secondary-dark); font-size:0.9rem;">
+            Generate unique credentials for paid students and enforce 1-device access.
+          </p>
+        </div>
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+          <button onclick="openCreateStudentModal()" class="btn btn-primary btn-sm">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Generate Student Credentials</span>
+          </button>
+          <button onclick="loadStudents(); showToast('Student roster refreshed', 'success');" class="btn btn-outline btn-sm">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Metrics Summary Grid -->
+      <div class="admin-metrics-grid">
+        <div class="metric-card">
+          <div class="metric-card-label">Total Students</div>
+          <div id="metric-total-students" class="metric-card-value">0</div>
+        </div>
+
+        <div class="metric-card accent">
+          <div class="metric-card-label">Active Enrollments</div>
+          <div id="metric-active-students" class="metric-card-value">0</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-card-label">Locked to 1 Device</div>
+          <div id="metric-locked-devices" class="metric-card-value" style="color:#6EE7B7;">0</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-card-label">Inactive / Pending</div>
+          <div id="metric-inactive-students" class="metric-card-value" style="color:#FCA5A5;">0</div>
+        </div>
+      </div>
+
+      <!-- Search & Status Filter Bar -->
+      <div class="admin-filter-bar">
+        <div class="admin-search-input">
+          <input type="text" id="admin-search-input" class="form-input" placeholder="Search student name or email...">
+        </div>
+
+        <div class="admin-pills">
+          <button class="pill-btn active" data-filter="all">All</button>
+          <button class="pill-btn" data-filter="active">Active Only</button>
+          <button class="pill-btn" data-filter="inactive">Inactive</button>
+        </div>
+      </div>
+
+      <!-- Students Table -->
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Status</th>
+              <th>Progress</th>
+              <th>Device Lock Security</th>
+              <th>Created</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="students-table-body">
+            <tr>
+              <td colspan="6" style="text-align:center; padding:3rem; color:var(--text-secondary-dark);">
+                Loading student records...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Quick Guidance Box -->
+      <div style="background-color:var(--bg-card); border:1px solid var(--border-dark); border-radius:var(--radius-card); padding:1.5rem; margin-top:2.5rem;">
+        <h3 style="font-size:1.05rem; color:var(--accent-yellow); margin-bottom:0.6rem; display:flex; align-items:center; gap:0.4rem;">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          <span>Admin Protocol & Single-Device Enforcement</span>
+        </h3>
+        <ul style="list-style:disc; padding-left:1.5rem; font-size:0.875rem; color:#CCCCCC; line-height:1.65;">
+          <li><strong>Generating Credentials:</strong> Click <em>"Generate Student Credentials"</em> above when a student pays on Selar. Enter their email, click generate, and copy the formatted WhatsApp notification message.</li>
+          <li><strong>Single-Device Lock:</strong> The first device (laptop/PC) the student logs in with will automatically bind to their profile. Subsequent logins from any other device or computer will be blocked.</li>
+          <li><strong>Resetting Device:</strong> If a student legitimately gets a new laptop, click <em>"Reset Device"</em> next to their record to clear their bound device ID.</li>
+        </ul>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Modal for Student Details & Credential Generation -->
+  <div id="student-detail-modal" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close-btn" onclick="closeModal('student-detail-modal')">&times;</button>
+      <div id="student-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; font-size:0.8125rem; color:var(--text-muted-dark);">
+        <div>&copy; <span class="current-year">2026</span> Thokerunga Innocent &bull; Admin Portal</div>
+        <div>Protected Route &bull; 1-Device Enforcement Active</div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/admin.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      initAdminDashboard();
+    });
+  </script>
+</body>
+</html>
