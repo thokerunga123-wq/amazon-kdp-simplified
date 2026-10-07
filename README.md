@@ -102,6 +102,22 @@ The project includes built-in test accounts that work immediately in Demo Mode:
 
 ---
 
+## ✅ Go-Live Checklist (do these in order)
+
+Until step 3 is done the site runs in **Demo Mode** (a yellow banner shows at the top). In Demo Mode, students you create only exist in *your* browser, so they cannot log in from their own device.
+
+1. **Create a Supabase project** at [supabase.com](https://supabase.com).
+2. **Run the database script:** Supabase → SQL Editor → New Query → paste all of `supabase-schema.sql` → Run. (Safe to run again later if you update it.)
+3. **Connect the site:** Supabase → Project Settings → API → copy the *Project URL* and *anon public* key into `js/config.js` (`SUPABASE_URL`, `SUPABASE_ANON_KEY`).
+4. **Turn OFF "Confirm email":** Supabase → Authentication → Sign In / Providers → Email → switch off *Confirm email* → Save. Otherwise the logins you generate for students won't work until they click an email link.
+5. **Set the site URL for password resets:** Supabase → Authentication → URL Configuration → set *Site URL* to your Netlify address and add `https://YOUR-SITE.netlify.app/forgot-password.html` to *Redirect URLs*.
+6. **Create your admin account** (see "Creating Your Admin Account" below).
+7. Put your real **WhatsApp number**, **Selar link** and **Wistia video IDs** in `js/config.js`, then redeploy on Netlify.
+
+> The demo accounts (`admin@example.com` / `student@example.com`) stop working automatically once Supabase is connected.
+
+---
+
 ## 🗄️ Setting Up Supabase Database
 
 1. Create a free account at [Supabase.com](https://supabase.com) and create a new project.
@@ -147,13 +163,10 @@ This version is designed for simple, reliable manual payment handling through Se
 1. **Student purchases:** Visitor clicks **"Enroll Now"** on the website and is sent to your **Selar** checkout.
 2. **Student pays:** Student completes payment on Selar via Mobile Money (MTN/Airtel), Card, or Bank Transfer.
 3. **Admin receives notice:** You receive an instant email and WhatsApp alert from Selar with the student's name and email.
-4. **Student registers:** The student goes to `register.html` on your site and creates their password using the same email.
-5. **Admin activates:** 
-   - Open `admin.html`.
-   - Search the student's email or name.
-   - Click the green **"Activate"** button.
-   - The student can immediately access all 10 video lessons on their dashboard!
-6. **Future Automation Ready:** The database structure is 100% compatible with an automated Selar Webhook if you decide to add Netlify Serverless functions later.
+4. **Admin generates the login:** Open `admin.html` → **Generate Student Credentials** → enter the student's name and Selar email → **Save & Generate Access**. The account is created already activated.
+5. **Send the details:** Click **Copy Message** or **Send on WhatsApp** to send the student their login.
+6. **Student logs in:** Their account locks to the first device they log in on. If they change laptop/browser, click **Reset Device** in the admin panel.
+7. **Future Automation Ready:** The database structure is 100% compatible with an automated Selar Webhook if you decide to add Netlify Serverless functions later.
 
 ---
 
@@ -202,7 +215,8 @@ This version is designed for simple, reliable manual payment handling through Se
 
 - **No Plaintext Passwords:** Authenticated directly through Supabase Auth.
 - **No Secret Keys in Frontend:** Only the public Anon Key is used; database integrity is strictly enforced via PostgreSQL Row Level Security (RLS).
-- **Video ID Protection:** Unauthenticated or unpaid users cannot retrieve lesson video IDs from the database.
+- **Video ID Protection:** Video IDs stored in the Supabase `lessons` table can only be read by active students (they take priority over `js/config.js`). For best protection, put the IDs in Supabase and leave the config placeholders, and turn on Wistia domain restrictions.
+- **Admin rights & device lock are server-enforced:** students cannot make themselves admin, activate themselves, or clear their own device lock — device binding runs through the `bind_device` database function.
 - **Security Headers:** Frame protection, strict Referrer-Policy, and XSS protection configured in `netlify.toml`.
 
 ---

@@ -188,7 +188,7 @@
   </footer>
 
   <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="js/config.js"></script>
   <script src="js/icons.js"></script>
   <script src="js/auth.js"></script>
@@ -224,8 +224,11 @@
           const urlParams = new URLSearchParams(window.location.search);
           const redirect = urlParams.get('redirect');
 
-          if (redirect) {
-            window.location.href = decodeURIComponent(redirect);
+          // Only allow redirects to pages on this site (blocks javascript: / external links)
+          const safeRedirect = redirect && /^[a-z0-9\-]+\.html(\?[^#]*)?$/i.test(redirect) ? redirect : null;
+
+          if (safeRedirect) {
+            window.location.href = safeRedirect;
           } else if (currentUser && currentUser.is_admin) {
             window.location.href = 'admin.html';
           } else {

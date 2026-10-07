@@ -89,6 +89,7 @@ alter table public.progress enable row level security;
 
 -- ==============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
+-- This whole file is safe to re-run: policies are dropped and re-created.
 -- ==============================================================================
 
 -- Helper function: Check if current authenticated user is admin
@@ -100,33 +101,45 @@ begin
     where id = auth.uid() and is_admin = true
   );
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer stable set search_path = public;
 
 -- PROFILES POLICIES
+drop policy if exists "Users can view own profile" on public.profiles;
 create policy "Users can view own profile"
     on public.profiles for select
     using (auth.uid() = id or public.is_admin());
 
+drop policy if exists "Users can update own profile" on public.profiles;
 create policy "Users can update own profile"
     on public.profiles for update
     using (auth.uid() = id)
     with check (auth.uid() = id);
 
+drop policy if exists "Admins can manage all profiles" on public.profiles;
 create policy "Admins can manage all profiles"
     on public.profiles for all
     using (public.is_admin());
 
+-- SECURITY: logged-in users may only edit their own name directly.
+-- is_admin, email and device_id can NOT be changed from the browser.
+-- Device binding / resetting happens only through the secure functions below.
+revoke update on public.profiles from authenticated, anon;
+grant update (full_name, updated_at) on public.profiles to authenticated;
+
 -- COURSES POLICIES
+drop policy if exists "Anyone can view active courses" on public.courses;
 create policy "Anyone can view active courses"
     on public.courses for select
     using (active = true or public.is_admin());
 
+drop policy if exists "Admins can manage courses" on public.courses;
 create policy "Admins can manage courses"
     on public.courses for all
     using (public.is_admin());
 
 -- LESSONS POLICIES
 -- Students can only read lesson details (and wistia_video_id) if enrolled and active
+drop policy if exists "Enrolled active students can view lessons" on public.lessons;
 create policy "Enrolled active students can view lessons"
     on public.lessons for select
     using (
@@ -140,22 +153,88 @@ create policy "Enrolled active students can view lessons"
         )
     );
 
+drop policy if exists "Admins can manage lessons" on public.lessons;
 create policy "Admins can manage lessons"
     on public.lessons for all
     using (public.is_admin());
 
 -- ENROLLMENTS POLICIES
--- Students can read their own enrollment
+drop policy if exists "Users can view own enrollment" on public.enrollments;
 create policy "Users can view own enrollment"
     on public.enrollments for select
     using (auth.uid() = user_id or public.is_admin());
 
 -- Only admins can insert or update enrollments (students cannot grant themselves access)
+drop policy if exists "Admins can manage all enrollments" on public.enrollments;
 create policy "Admins can manage all enrollments"
     on public.enrollments for all
+    using (public.is_admin())
+    with check (public.is_admin());
+
+-- PROGRESS POLICIES
+drop policy if exists "Users can view own progress" on public.progress;
+create policy "Users can view own progress"
+    on public.progress for select
+    using (auth.uid() = user_id or public.is_admin());
+
+drop policy if exists "Users can insert/update own progress" on public.progress;
+create policy "Users can insert/update own progress"
+    on public.progress for insert
+    with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update own progress" on public.progress;
+create policy "Users can update own progress"
+    on public.progress for update
+    using (auth.uid() = user_id)
+    with check (auth.uid() = user_id);
+
+drop policy if exists "Admins can view all progress" on public.progress;
+create policy "Admins can view all progress"
+    on public.progress for all
     using (public.is_admin());
 
--- Function to reset a student's device lock
+-- ==============================================================================
+-- SINGLE-DEVICE LOCK FUNCTIONS (run on the server, cannot be bypassed)
+-- ==============================================================================
+
+-- Called by the student at login. Binds the account to this device the first
+-- time; afterwards returns 'mismatch' when a different device tries to log in.
+-- Returns: 'admin' | 'bound' | 'ok' | 'mismatch'
+create or replace function public.bind_device(p_device_id text)
+returns text as $$
+declare
+  v_profile public.profiles%rowtype;
+begin
+  if auth.uid() is null then
+    raise exception 'Not authenticated';
+  end if;
+  if p_device_id is null or length(p_device_id) < 8 then
+    raise exception 'Invalid device id';
+  end if;
+
+  select * into v_profile from public.profiles where id = auth.uid() for update;
+  if not found then
+    raise exception 'Profile not found';
+  end if;
+
+  if v_profile.is_admin then
+    return 'admin';
+  end if;
+
+  if v_profile.device_id is null then
+    update public.profiles
+       set device_id = p_device_id, updated_at = now()
+     where id = auth.uid();
+    return 'bound';
+  elsif v_profile.device_id = p_device_id then
+    return 'ok';
+  else
+    return 'mismatch';
+  end if;
+end;
+$$ language plpgsql security definer set search_path = public;
+
+-- Admin-only: clear a student's device lock (new laptop etc.)
 create or replace function public.reset_student_device(target_user_id uuid)
 returns void as $$
 begin
@@ -167,24 +246,12 @@ begin
   set device_id = null, updated_at = now()
   where id = target_user_id;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = public;
 
--- PROGRESS POLICIES
-create policy "Users can view own progress"
-    on public.progress for select
-    using (auth.uid() = user_id or public.is_admin());
-
-create policy "Users can insert/update own progress"
-    on public.progress for insert
-    with check (auth.uid() = user_id);
-
-create policy "Users can update own progress"
-    on public.progress for update
-    using (auth.uid() = user_id);
-
-create policy "Admins can view all progress"
-    on public.progress for all
-    using (public.is_admin());
+revoke execute on function public.bind_device(text) from anon;
+revoke execute on function public.reset_student_device(uuid) from anon;
+grant execute on function public.bind_device(text) to authenticated;
+grant execute on function public.reset_student_device(uuid) to authenticated;
 
 -- ==============================================================================
 -- AUTOMATIC PROFILE CREATION TRIGGER ON AUTH SIGNUP
@@ -194,14 +261,18 @@ returns trigger as $$
 declare
     default_course_id uuid;
 begin
-    -- 1. Create student profile
+    -- 1. Create student profile.
+    -- SECURITY: is_admin is ALWAYS false here. Never trust sign-up metadata for
+    -- admin rights (anyone can send metadata with the public anon key).
+    -- Make yourself admin with the SQL in the README instead.
     insert into public.profiles (id, full_name, email, is_admin)
     values (
         new.id,
-        coalesce(new.raw_user_meta_data->>'full_name', 'Student'),
+        coalesce(nullif(new.raw_user_meta_data->>'full_name', ''), 'Student'),
         new.email,
-        coalesce((new.raw_user_meta_data->>'is_admin')::boolean, false)
-    );
+        false
+    )
+    on conflict (id) do nothing;
 
     -- 2. Find primary course ID
     select id into default_course_id from public.courses where slug = 'amazon-kdp-simplified' limit 1;
@@ -215,7 +286,7 @@ begin
 
     return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = public;
 
 -- Trigger definition
 drop trigger if exists on_auth_user_created on auth.users;
