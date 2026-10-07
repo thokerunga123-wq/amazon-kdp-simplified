@@ -249,17 +249,85 @@ function renderPlayerSidebar() {
     item.className = `player-lesson-item ${isActive ? 'active' : ''}`;
     item.onclick = () => switchLesson(lesson.number);
 
+    item.setAttribute('role', 'button');
+    item.setAttribute('tabindex', '0');
+    if (isActive) item.setAttribute('aria-current', 'true');
+    item.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchLesson(lesson.number); }
+    };
+
+    const clockIcon = typeof ICONS !== 'undefined' ? ICONS.clock : '';
     item.innerHTML = `
-      <div class="player-check-icon ${isCompleted ? 'completed' : ''}">
-        ${isCompleted ? (typeof ICONS !== 'undefined' ? ICONS.check : '✓') : ''}
+      <div class="player-check-icon ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''}">
+        ${isCompleted ? (typeof ICONS !== 'undefined' ? ICONS.check : '✓') : String(lesson.number).padStart(2, '0')}
       </div>
       <div class="player-lesson-meta">
-        <h4>${lesson.number}. ${lesson.title}</h4>
-        <span>${lesson.duration}</span>
+        <h4>${lesson.title}</h4>
+        <span><span class="icon-inline">${clockIcon}</span>${lesson.duration}${isActive ? ' &bull; <em>Now playing</em>' : ''}</span>
       </div>
     `;
 
     sidebarContainer.appendChild(item);
+  });
+
+  // Sidebar progress summary
+  const total = APP_CONFIG.LESSONS_DATA.length;
+  const done = completedLessons.length;
+  const fill = document.getElementById('sidebar-progress-fill');
+  const text = document.getElementById('sidebar-progress-text');
+  if (fill) fill.style.width = `${Math.round((done / total) * 100)}%`;
+  if (text) text.textContent = `${done} of ${total} completed`;
+
+  // Keep the active lesson visible in the sidebar
+  // (only scrolls inside the sidebar list, never the whole page)
+  const activeItem = sidebarContainer.querySelector('.player-lesson-item.active');
+  if (activeItem && sidebarContainer.scrollHeight > sidebarContainer.clientHeight) {
+    const top = activeItem.offsetTop - sidebarContainer.offsetTop;
+    const bottom = top + activeItem.offsetHeight;
+    if (top < sidebarContainer.scrollTop) {
+      sidebarContainer.scrollTop = top - 8;
+    } else if (bottom > sidebarContainer.scrollTop + sidebarContainer.clientHeight) {
+      sidebarContainer.scrollTop = bottom - sidebarContainer.clientHeight + 8;
+    }
+  }
+}
+
+/**
+ * Render lesson notes: "• " lines become a styled list, other lines become paragraphs.
+ * Built with textContent so note text can never inject HTML.
+ */
+function renderLessonNotes(container, notes) {
+  container.innerHTML = '';
+  let list = null;
+  (notes || '').split('\n').forEach(raw => {
+    const line = raw.trim();
+    if (!line) return;
+    if (line.startsWith('•') || line.startsWith('-')) {
+      if (!list) {
+        list = document.createElement('ul');
+        list.className = 'lesson-notes-list';
+        container.appendChild(list);
+      }
+      const li = document.createElement('li');
+      const text = line.replace(/^[•-]\s*/, '');
+      const actionMatch = text.match(/^(Action Step:)\s*(.*)$/i);
+      if (actionMatch) {
+        li.className = 'is-action';
+        const strong = document.createElement('strong');
+        strong.textContent = actionMatch[1] + ' ';
+        li.appendChild(strong);
+        li.appendChild(document.createTextNode(actionMatch[2]));
+      } else {
+        li.textContent = text;
+      }
+      list.appendChild(li);
+    } else {
+      list = null;
+      const p = document.createElement('p');
+      p.className = 'lesson-notes-heading';
+      p.textContent = line;
+      container.appendChild(p);
+    }
   });
 }
 
@@ -271,9 +339,21 @@ function loadLessonContent(lessonNumber) {
   const newUrl = `${window.location.pathname}?lesson=${lessonNumber}`;
   window.history.replaceState({ path: newUrl }, '', newUrl);
 
-  document.getElementById('player-lesson-title').textContent = `Lesson ${lesson.number}: ${lesson.title}`;
+  document.getElementById('player-lesson-title').textContent = lesson.title;
+  document.title = `Lesson ${lesson.number}: ${lesson.title} | Amazon KDP Simplified`;
   document.getElementById('player-lesson-desc').textContent = lesson.description;
-  document.getElementById('player-lesson-notes').textContent = lesson.notes;
+  renderLessonNotes(document.getElementById('player-lesson-notes'), lesson.notes);
+
+  const chipNumber = document.getElementById('lesson-chip-number');
+  const chipDuration = document.getElementById('lesson-chip-duration');
+  const chipStatus = document.getElementById('lesson-chip-status');
+  const lessonDone = completedLessons.includes(lessonNumber);
+  if (chipNumber) chipNumber.textContent = `Lesson ${lesson.number} of ${APP_CONFIG.LESSONS_DATA.length}`;
+  if (chipDuration) chipDuration.innerHTML = `<span class="icon-inline">${typeof ICONS !== 'undefined' ? ICONS.clock : ''}</span> ${lesson.duration}`;
+  if (chipStatus) {
+    chipStatus.textContent = lessonDone ? 'Completed' : 'In progress';
+    chipStatus.className = `lesson-chip ${lessonDone ? 'lesson-chip-success' : ''}`;
+  }
   document.getElementById('topbar-lesson-indicator').textContent = `Lesson ${lesson.number} of ${APP_CONFIG.LESSONS_DATA.length}`;
 
   const completeBtn = document.getElementById('btn-mark-complete');
@@ -309,17 +389,17 @@ function renderWistiaPlayer(lesson) {
 
   if (!wistiaId || wistiaId.startsWith('WISTIA_VIDEO_ID')) {
     container.innerHTML = `
-      <div style="aspect-ratio:16/9; background:#121215; border:1px solid #222227; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:2rem; border-radius:12px;">
-        <div style="width:58px; height:58px; border-radius:50%; background:rgba(245, 197, 66, 0.12); border:1px solid rgba(245, 197, 66, 0.25); color:#F5C542; display:flex; align-items:center; justify-content:center; margin-bottom:1rem;">
-          <svg style="width:24px; height:24px; fill:currentColor;" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+      <div class="video-placeholder">
+        <div class="video-placeholder-glow"></div>
+        <span class="video-placeholder-badge">Lesson ${lesson.number} &bull; ${lesson.duration}</span>
+        <div class="video-placeholder-play" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg>
         </div>
-        <h3 style="color:#FFFFFF; font-size:1.2rem; margin-bottom:0.4rem;">Lesson ${lesson.number}: Video Player Ready</h3>
-        <p style="color:#9E9EA6; font-size:0.875rem; max-width:460px; margin-bottom:1.25rem;">
-          Stream placeholder for <strong>"${lesson.title}"</strong>. Replace <code>${wistiaId}</code> with your uploaded Wistia hashed ID in <code>js/config.js</code> or Supabase.
-        </p>
-        <div style="font-size:0.8rem; color:#6C6C75;">Duration: ${lesson.duration} &bull; Protected Course Stream</div>
+        <h3 class="video-placeholder-title"></h3>
+        <p class="video-placeholder-sub">Video coming soon. The lesson notes below are ready for you now.</p>
       </div>
     `;
+    container.querySelector('.video-placeholder-title').textContent = lesson.title;
     return;
   }
 
