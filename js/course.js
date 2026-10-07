@@ -28,8 +28,12 @@ async function getStudentProgress(userId) {
       .filter(Boolean);
   } else {
     // Demo mode: read from localStorage
-    const saved = localStorage.getItem(`kdp_progress_${userId}`);
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = JSON.parse(localStorage.getItem(`kdp_progress_${userId}`) || '[]');
+      return Array.isArray(saved) ? saved : [];
+    } catch (e) {
+      return [];
+    }
   }
 }
 
@@ -40,8 +44,9 @@ async function markLessonCompleted(userId, lessonNumber, isCompleted = true) {
     const { data: lesson } = await client
       .from('lessons')
       .select('id')
+      .eq('course_id', APP_CONFIG.COURSE_ID)
       .eq('lesson_number', lessonNumber)
-      .single();
+      .maybeSingle();
 
     if (!lesson) return false;
 
@@ -52,7 +57,7 @@ async function markLessonCompleted(userId, lessonNumber, isCompleted = true) {
         lesson_id: lesson.id,
         completed: isCompleted,
         completed_at: isCompleted ? new Date().toISOString() : null
-      }, { onConflict: 'user_id, lesson_id' });
+      }, { onConflict: 'user_id,lesson_id' });
 
     if (error) {
       console.error("Error updating progress:", error);
@@ -206,10 +211,28 @@ async function initCoursePlayer() {
   }
 
   completedLessons = await getStudentProgress(currentUser.id);
+  await loadLessonVideoIdsFromDatabase();
 
   renderPlayerSidebar();
   loadLessonContent(currentLessonNumber);
   attachPlayerControls();
+}
+
+// Video IDs saved in the Supabase "lessons" table take priority over js/config.js
+let dbVideoIds = {};
+async function loadLessonVideoIdsFromDatabase() {
+  const client = getSupabase();
+  if (!client) return;
+  const { data, error } = await client
+    .from('lessons')
+    .select('lesson_number, wistia_video_id')
+    .eq('course_id', APP_CONFIG.COURSE_ID);
+  if (error || !data) return;
+  data.forEach(row => {
+    if (row.wistia_video_id && !row.wistia_video_id.startsWith('WISTIA_VIDEO_ID')) {
+      dbVideoIds[row.lesson_number] = row.wistia_video_id;
+    }
+  });
 }
 
 function renderPlayerSidebar() {
@@ -282,7 +305,7 @@ function renderWistiaPlayer(lesson) {
   const container = document.getElementById('wistia-embed-target');
   if (!container) return;
 
-  const wistiaId = APP_CONFIG.WISTIA_VIDEOS[lesson.number] || lesson.wistiaId;
+  const wistiaId = dbVideoIds[lesson.number] || APP_CONFIG.WISTIA_VIDEOS[lesson.number] || lesson.wistiaId;
 
   if (!wistiaId || wistiaId.startsWith('WISTIA_VIDEO_ID')) {
     container.innerHTML = `
@@ -304,7 +327,7 @@ function renderWistiaPlayer(lesson) {
     <div class="wistia_responsive_padding" style="padding:56.25% 0 0 0;position:relative;">
       <div class="wistia_responsive_wrapper" style="height:100%;left:0;position:absolute;top:0;width:100%;">
         <iframe 
-          src="https://fast.wistia.net/embed/iframe/${wistiaId}?videoFoam=true" 
+          src="https://fast.wistia.net/embed/iframe/${encodeURIComponent(wistiaId)}?videoFoam=true" 
           title="${lesson.title}" 
           allow="autoplay; fullscreen" 
           allowtransparency="true" 

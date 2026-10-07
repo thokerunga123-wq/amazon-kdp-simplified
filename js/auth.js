@@ -28,14 +28,15 @@ function getSupabase() {
 // SINGLE DEVICE FINGERPRINT / IDENTIFIER
 // -----------------------------------------------------------------------------
 function getLocalDeviceId() {
-  let deviceId = localStorage.getItem('kdp_device_uuid');
+  let deviceId = null;
+  try { deviceId = localStorage.getItem('kdp_device_uuid'); } catch (e) {}
   if (!deviceId) {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
       deviceId = 'dev_' + crypto.randomUUID();
     } else {
       deviceId = 'dev_' + Math.random().toString(36).substring(2, 15) + '_' + Date.now();
     }
-    localStorage.setItem('kdp_device_uuid', deviceId);
+    try { localStorage.setItem('kdp_device_uuid', deviceId); } catch (e) {}
   }
   return deviceId;
 }
@@ -101,6 +102,7 @@ function clearDemoSession() {
 // -----------------------------------------------------------------------------
 // AUTHENTICATION LOGIC WITH SINGLE DEVICE ENFORCEMENT
 // -----------------------------------------------------------------------------
+const DEVICE_LOCK_MESSAGE = "DEVICE LOCK: This course account is registered to another device. Access is restricted to 1 device per student. If you changed your laptop or browser, please contact the instructor on WhatsApp for a device reset.";
 
 /**
  * Log in student and bind/validate device lock
@@ -108,6 +110,11 @@ function clearDemoSession() {
 async function loginUser(email, password) {
   const currentDeviceId = getLocalDeviceId();
   const client = getSupabase();
+
+  if (!client && isSupabaseConfigured()) {
+    // Live keys are set but the Supabase library failed to load: never fall back to demo accounts
+    throw new Error("The login service could not load. Please check your internet connection and refresh the page.");
+  }
 
   if (client) {
     // 1. Authenticate with Supabase Auth
@@ -119,28 +126,22 @@ async function loginUser(email, password) {
 
     const user = data.user;
 
-    // 2. Fetch profile & check device_id
-    const { data: profile, error: profileErr } = await client
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    // 2. Enforce single-device lock on the server (secure RPC, cannot be bypassed
+    //    from the browser). Binds on first login, rejects other devices afterwards.
+    const { data: lockStatus, error: lockErr } = await client.rpc('bind_device', {
+      p_device_id: currentDeviceId
+    });
 
-    if (profileErr) throw profileErr;
+    if (lockErr) {
+      await client.auth.signOut();
+      console.error("Device lock check failed:", lockErr);
+      throw new Error("Could not verify your device. Please try again, or contact the instructor on WhatsApp if this keeps happening.");
+    }
 
-    // If student is not admin, enforce single-device lock
-    if (!profile.is_admin) {
-      if (!profile.device_id) {
-        // First login on this device -> Bind device
-        await client
-          .from('profiles')
-          .update({ device_id: currentDeviceId, updated_at: new Date().toISOString() })
-          .eq('id', user.id);
-      } else if (profile.device_id !== currentDeviceId) {
-        // Device mismatch! Reject login and sign out
-        await client.auth.signOut();
-        throw new Error("DEVICE LOCK: This course account is registered to another device. Access is restricted to 1 device per student. If you changed your laptop, please contact the instructor on WhatsApp for a device reset.");
-      }
+    if (lockStatus === 'mismatch') {
+      // Device mismatch! Reject login and sign out
+      await client.auth.signOut();
+      throw new Error(DEVICE_LOCK_MESSAGE);
     }
 
     return { user, session: data.session, isLive: true };
@@ -163,7 +164,7 @@ async function loginUser(email, password) {
         student.device_id = currentDeviceId;
         saveDemoStudents(students);
       } else if (student.device_id !== currentDeviceId) {
-        throw new Error("DEVICE LOCK: This course account is locked to a different device. Each account works on only 1 device. Please contact the administrator on WhatsApp to reset your device lock.");
+        throw new Error(DEVICE_LOCK_MESSAGE);
       }
     }
 
@@ -189,6 +190,7 @@ async function logoutUser() {
  */
 async function getCurrentUser() {
   const client = getSupabase();
+  if (!client && isSupabaseConfigured()) return null;
 
   if (client) {
     const { data: { session }, error: sessionError } = await client.auth.getSession();
@@ -198,12 +200,19 @@ async function getCurrentUser() {
       .from('profiles')
       .select('*')
       .eq('id', session.user.id)
-      .single();
+      .maybeSingle();
+
+    // Session copied to / still alive on a different device -> kick it out
+    if (profile && !profile.is_admin && profile.device_id && profile.device_id !== getLocalDeviceId()) {
+      await client.auth.signOut();
+      return null;
+    }
 
     const { data: enrollment } = await client
       .from('enrollments')
       .select('status')
       .eq('user_id', session.user.id)
+      .eq('course_id', APP_CONFIG.COURSE_ID)
       .maybeSingle();
 
     return {
@@ -216,7 +225,16 @@ async function getCurrentUser() {
       raw_user: session.user
     };
   } else {
-    return getDemoSession();
+    const demo = getDemoSession();
+    if (!demo) return null;
+    // Always read the latest record so admin changes (deactivate, device reset) apply immediately
+    const fresh = getDemoStudents().find(s => s.id === demo.id);
+    if (!fresh) { clearDemoSession(); return null; }
+    if (!fresh.is_admin && fresh.device_id && fresh.device_id !== getLocalDeviceId()) {
+      clearDemoSession();
+      return null;
+    }
+    return fresh;
   }
 }
 
@@ -225,6 +243,7 @@ async function getCurrentUser() {
  */
 async function updatePassword(newPassword) {
   const client = getSupabase();
+  if (!client && isSupabaseConfigured()) throw new Error("The login service could not load. Please refresh the page.");
   if (client) {
     const { data, error } = await client.auth.updateUser({
       password: newPassword
@@ -252,6 +271,7 @@ async function updatePassword(newPassword) {
  */
 async function requestPasswordReset(email) {
   const client = getSupabase();
+  if (!client && isSupabaseConfigured()) throw new Error("The login service could not load. Please refresh the page.");
   if (client) {
     const { data, error } = await client.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin + '/forgot-password.html?type=recovery'
@@ -333,6 +353,30 @@ async function updateNavAuthUI() {
   });
 }
 
+/**
+ * Visible warning while Supabase keys are not set. In Demo Mode accounts only
+ * exist inside the current browser, so students cannot log in from their own devices.
+ */
+function showDemoModeBanner() {
+  if (document.getElementById('demo-mode-banner')) return;
+  if (isSupabaseConfigured()) {
+    if (typeof supabase === 'undefined') {
+      const warn = document.createElement('div');
+      warn.id = 'demo-mode-banner';
+      warn.className = 'demo-mode-banner';
+      warn.innerHTML = '<strong>Connection problem:</strong> The login service could not load. Please check your internet connection and refresh the page.';
+      document.body.prepend(warn);
+    }
+    return;
+  }
+  const banner = document.createElement('div');
+  banner.id = 'demo-mode-banner';
+  banner.className = 'demo-mode-banner';
+  banner.innerHTML = '<strong>Demo Mode:</strong> Supabase is not connected yet. Logins and students only exist in this browser. Add your Supabase URL and anon key in <code>js/config.js</code> to go live.';
+  document.body.prepend(banner);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  showDemoModeBanner();
   updateNavAuthUI();
 });

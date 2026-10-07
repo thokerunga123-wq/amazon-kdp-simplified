@@ -81,13 +81,22 @@ async function loadStudents() {
       is_admin: s.is_admin,
       device_id: s.device_id,
       status: s.enrollment_status || 'active',
-      completed_lessons: s.completed_lessons || 0,
+      completed_lessons: getDemoCompletedCount(s.id),
       created_at: s.created_at || new Date().toISOString()
     }));
   }
 
   updateMetrics();
   renderStudentTable();
+}
+
+function getDemoCompletedCount(userId) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(`kdp_progress_${userId}`) || '[]');
+    return Array.isArray(saved) ? saved.length : 0;
+  } catch (e) {
+    return 0;
+  }
 }
 
 /**
@@ -97,7 +106,7 @@ function updateMetrics() {
   const studentsOnly = allStudents.filter(s => !s.is_admin);
   const total = studentsOnly.length;
   const active = studentsOnly.filter(s => s.status === 'active').length;
-  const inactive = studentsOnly.filter(s => s.status === 'inactive').length;
+  const inactive = studentsOnly.filter(s => s.status !== 'active').length;
   const lockedDevices = studentsOnly.filter(s => s.device_id).length;
 
   document.getElementById('metric-total-students').textContent = total;
@@ -116,14 +125,13 @@ function renderStudentTable() {
   const filtered = allStudents.filter(student => {
     if (student.is_admin) return false;
 
-    if (currentFilter !== 'all' && student.status !== currentFilter) {
-      return false;
-    }
+    if (currentFilter === 'active' && student.status !== 'active') return false;
+    if (currentFilter === 'inactive' && student.status === 'active') return false;
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      const matchName = student.full_name.toLowerCase().includes(q);
-      const matchEmail = student.email.toLowerCase().includes(q);
+      const matchName = (student.full_name || '').toLowerCase().includes(q);
+      const matchEmail = (student.email || '').toLowerCase().includes(q);
       if (!matchName && !matchEmail) return false;
     }
 
@@ -214,10 +222,15 @@ async function toggleEnrollment(studentId, newStatus) {
   const client = getSupabase();
 
   if (client) {
+    // Upsert so activation also works for students who have no enrollment row yet
     const { error } = await client
       .from('enrollments')
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
-      .eq('user_id', studentId);
+      .upsert({
+        user_id: studentId,
+        course_id: APP_CONFIG.COURSE_ID,
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,course_id' });
 
     if (error) {
       console.error("Error updating enrollment:", error);
@@ -248,10 +261,7 @@ async function resetStudentDeviceLock(studentId) {
   const client = getSupabase();
 
   if (client) {
-    const { error } = await client
-      .from('profiles')
-      .update({ device_id: null, updated_at: new Date().toISOString() })
-      .eq('id', studentId);
+    const { error } = await client.rpc('reset_student_device', { target_user_id: studentId });
 
     if (error) {
       console.error("Error resetting device:", error);
@@ -355,28 +365,55 @@ async function handleCreateStudentSubmit(e) {
 
   if (client) {
     try {
-      // In Supabase, creating users by admin can be done via Supabase Admin API / Edge function or invited
-      // For frontend client, we create the profile & enrollment:
-      const { data, error } = await client.auth.signUp({
+      if (password.length < 6) {
+        throw new Error("Password must be at least 6 characters.");
+      }
+
+      // IMPORTANT: sign the student up on a separate, non-persistent client.
+      // Using the main client would replace the admin's own session with the student's.
+      const signupClient = supabase.createClient(APP_CONFIG.SUPABASE_URL, APP_CONFIG.SUPABASE_ANON_KEY, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+          storageKey: 'kdp-admin-signup-' + Date.now()
+        }
+      });
+
+      const { data, error } = await signupClient.auth.signUp({
         email,
         password,
         options: {
-          data: { full_name: name, is_admin: false }
+          data: { full_name: name }
         }
       });
 
       if (error) throw error;
 
-      // Ensure active enrollment
-      if (data.user) {
-        await client
-          .from('enrollments')
-          .upsert({
-            user_id: data.user.id,
-            course_id: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
-            status: 'active',
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'user_id, course_id' });
+      // Supabase returns a user with no identities when the email already exists
+      if (!data.user || (Array.isArray(data.user.identities) && data.user.identities.length === 0)) {
+        throw new Error("A student with this email already exists. Search for them in the table and click Activate instead.");
+      }
+
+      if (!data.session) {
+        // "Confirm email" is ON in Supabase: the student must click the email link before they can log in
+        showToast("Account created, but Supabase 'Confirm email' is ON. Turn it OFF (Authentication → Sign In / Providers → Email) so generated logins work immediately.", "error", 9000);
+      }
+      try { await signupClient.auth.signOut(); } catch (e) {}
+
+      // Activate enrollment (done with the admin's own session)
+      const { error: enrollErr } = await client
+        .from('enrollments')
+        .upsert({
+          user_id: data.user.id,
+          course_id: APP_CONFIG.COURSE_ID,
+          status: 'active',
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id,course_id' });
+
+      if (enrollErr) {
+        console.error("Error activating enrollment:", enrollErr);
+        showToast("Account created but activation failed. Click Activate next to the student.", "error", 7000);
       }
     } catch (err) {
       console.error("Error creating student in Supabase:", err);
@@ -388,6 +425,12 @@ async function handleCreateStudentSubmit(e) {
   } else {
     // Demo Mode Storage
     const students = getDemoStudents();
+    if (students.some(s => s.email.toLowerCase() === email.toLowerCase())) {
+      showToast("A student with this email already exists.", "error");
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save & Generate Access';
+      return;
+    }
     const newStudent = {
       id: "student-" + Date.now(),
       full_name: name,
@@ -396,7 +439,6 @@ async function handleCreateStudentSubmit(e) {
       is_admin: false,
       enrollment_status: "active",
       device_id: null, // Ready for first login on 1 device
-      completed_lessons: 0,
       created_at: new Date().toISOString()
     };
     students.unshift(newStudent);
@@ -417,7 +459,7 @@ function showStudentWelcomeMessageModal(name, email, password) {
   const modalEl = document.getElementById('student-modal-body');
   if (!modalEl) return;
 
-  const loginUrl = window.location.origin + '/index.html';
+  const loginUrl = new URL('index.html', window.location.href).href;
   const whatsappMsg = `Hello ${name}, welcome to Amazon KDP Simplified! 🎓
 
 Here are your exclusive course access details:
@@ -457,7 +499,7 @@ Let me know once you log in successfully!`;
 
     <div style="margin-bottom:1.5rem;">
       <label class="form-label">Pre-formatted Student Message:</label>
-      <textarea id="whatsapp-copy-box" class="form-input" rows="7" readonly style="font-family:monospace; font-size:0.8125rem;">${whatsappMsg}</textarea>
+      <textarea id="whatsapp-copy-box" class="form-input" rows="7" readonly style="font-family:monospace; font-size:0.8125rem;">${escapeHtml(whatsappMsg)}</textarea>
     </div>
 
     <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
@@ -478,8 +520,13 @@ function copyStudentMessage() {
   const box = document.getElementById('whatsapp-copy-box');
   if (box) {
     box.select();
-    navigator.clipboard.writeText(box.value);
-    showToast("Message copied to clipboard!", "success");
+    const done = () => showToast("Message copied to clipboard!", "success");
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(box.value).then(done).catch(() => { document.execCommand('copy'); done(); });
+    } else {
+      document.execCommand('copy');
+      done();
+    }
     const copyBtn = document.getElementById('btn-copy-msg');
     if (copyBtn) copyBtn.textContent = "Copied! ✓";
   }
@@ -555,5 +602,10 @@ function attachAdminEventListeners() {
 
 function escapeHtml(text) {
   if (!text) return '';
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }

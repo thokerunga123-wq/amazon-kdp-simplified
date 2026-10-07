@@ -24,6 +24,8 @@ const APP_CONFIG = {
   COURSE_NAME: "Amazon KDP Simplified",
   INSTRUCTOR_NAME: "Thokerunga Innocent",
   COURSE_SLUG: "amazon-kdp-simplified",
+  // Must match the course id seeded in supabase-schema.sql
+  COURSE_ID: "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
 
   // 10 Lesson Wistia Video IDs (Replace with your 10 uploaded Wistia hashed IDs)
   // Example Wistia ID: "abc123defg"
