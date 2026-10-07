@@ -158,11 +158,13 @@ async function initDashboard() {
     if (thumb) {
       const old = thumb.querySelector('img');
       if (old) old.remove();
+      continueBtn.classList.remove('has-thumb');
       if (thumbUrl) {
         const img = document.createElement('img');
         img.src = thumbUrl;
         img.alt = '';
-        img.onerror = () => img.remove();
+        img.onload = () => continueBtn.classList.add('has-thumb');
+        img.onerror = () => { img.remove(); continueBtn.classList.remove('has-thumb'); };
         thumb.prepend(img);
       }
     }
