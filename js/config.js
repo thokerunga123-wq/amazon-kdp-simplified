@@ -27,6 +27,10 @@ const APP_CONFIG = {
   // Must match the course id seeded in supabase-schema.sql
   COURSE_ID: "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
 
+  // How many devices one student account can be used on.
+  // (The real limit is enforced in Supabase: v_max in public.bind_device)
+  MAX_DEVICES: 3,
+
   // 10 Lesson Wistia Video IDs (Replace with your 10 uploaded Wistia hashed IDs)
   // Example Wistia ID: "abc123defg"
   WISTIA_VIDEOS: {

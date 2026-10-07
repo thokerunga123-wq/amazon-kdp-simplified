@@ -61,7 +61,7 @@ async function loadStudents() {
     // 1. Fetch profiles
     const { data: profiles, error: profileErr } = await client
       .from('profiles')
-      .select('id, full_name, email, is_admin, device_id, created_at')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (profileErr) {
@@ -96,7 +96,7 @@ async function loadStudents() {
       full_name: p.full_name,
       email: p.email,
       is_admin: p.is_admin,
-      device_id: p.device_id,
+      devices: getDeviceList(p),
       status: enrollmentMap[p.id] || 'inactive',
       completed_lessons: progressMap[p.id] || 0,
       created_at: p.created_at
@@ -110,7 +110,7 @@ async function loadStudents() {
       email: s.email,
       password: s.password || 'password123',
       is_admin: s.is_admin,
-      device_id: s.device_id,
+      devices: getDeviceList(s),
       status: s.enrollment_status || 'active',
       completed_lessons: getDemoCompletedCount(s.id),
       created_at: s.created_at || new Date().toISOString()
@@ -138,7 +138,7 @@ function updateMetrics() {
   const total = studentsOnly.length;
   const active = studentsOnly.filter(s => s.status === 'active').length;
   const inactive = studentsOnly.filter(s => s.status !== 'active').length;
-  const lockedDevices = studentsOnly.filter(s => s.device_id).length;
+  const lockedDevices = studentsOnly.filter(s => s.devices.length >= (APP_CONFIG.MAX_DEVICES || 3)).length;
 
   document.getElementById('metric-total-students').textContent = total;
   document.getElementById('metric-active-students').textContent = active;
@@ -194,7 +194,9 @@ function renderStudentTable() {
       year: 'numeric'
     });
     const isActive = student.status === 'active';
-    const isDeviceLocked = Boolean(student.device_id);
+    const maxDevices = APP_CONFIG.MAX_DEVICES || 3;
+    const deviceCount = student.devices.length;
+    const atLimit = deviceCount >= maxDevices;
 
     row.innerHTML = `
       <td>
@@ -216,10 +218,10 @@ function renderStudentTable() {
         </div>
       </td>
       <td>
-        ${isDeviceLocked
-          ? `<div class="admin-device is-locked">
-               <span class="icon-inline">${ICONS.lock}</span><span>Locked</span>
-               <button onclick="resetStudentDeviceLock('${student.id}')" class="admin-text-btn" title="Let the student log in on a new device">Reset</button>
+        ${deviceCount
+          ? `<div class="admin-device ${atLimit ? 'is-full' : 'is-locked'}" title="${deviceCount} of ${maxDevices} devices used">
+               <span class="icon-inline">${ICONS.device}</span><span>${deviceCount} of ${maxDevices}</span>
+               <button onclick="resetStudentDeviceLock('${student.id}')" class="admin-text-btn" title="Clear all devices so the student can log in on new ones">Reset</button>
              </div>`
           : `<div class="admin-device"><span class="icon-inline">${ICONS.device}</span><span>Not used yet</span></div>`
         }
@@ -281,7 +283,7 @@ async function toggleEnrollment(studentId, newStatus) {
  * Reset Device Lock for a Student
  */
 async function resetStudentDeviceLock(studentId) {
-  const confirmReset = confirm("Reset device lock for this student? This allows them to log in on a new laptop or device.");
+  const confirmReset = confirm("Reset all devices for this student? They can then log in again on up to " + (APP_CONFIG.MAX_DEVICES || 3) + " devices.");
   if (!confirmReset) return;
 
   const client = getSupabase();
@@ -299,12 +301,13 @@ async function resetStudentDeviceLock(studentId) {
     const students = getDemoStudents();
     const match = students.find(s => s.id === studentId);
     if (match) {
-      match.device_id = null;
+      match.device_ids = [];
+      delete match.device_id;
       saveDemoStudents(students);
     }
   }
 
-  showToast("Device lock reset successfully! Student can now log in on their new device.", "success");
+  showToast("Devices reset. The student can now log in on new devices.", "success");
   await loadStudents();
 }
 
@@ -342,7 +345,7 @@ function openCreateStudentModal() {
         Add student
       </h2>
       <p style="color:var(--text-secondary-dark); font-size:0.875rem;">
-        Creates a login for someone who paid on Selar. Access is active immediately and locks to the first device they use.
+        Creates a login for someone who paid on Selar. Access is active immediately and works on up to ${APP_CONFIG.MAX_DEVICES || 3} devices.
       </p>
     </div>
 
@@ -365,7 +368,7 @@ function openCreateStudentModal() {
           </button>
         </div>
         <input type="text" id="gen-password" class="form-input" value="${defaultPassword}" required>
-        <span class="form-help">Locked to only 1 device upon first login.</span>
+        <span class="form-help">The student can use this login on up to ${APP_CONFIG.MAX_DEVICES || 3} devices.</span>
       </div>
 
       <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
@@ -470,7 +473,7 @@ async function handleCreateStudentSubmit(e) {
       password: password,
       is_admin: false,
       enrollment_status: "active",
-      device_id: null, // Ready for first login on 1 device
+      device_ids: [], // Up to MAX_DEVICES are added as the student logs in
       created_at: new Date().toISOString()
     };
     students.unshift(newStudent);
@@ -499,7 +502,7 @@ Here are your exclusive course access details:
 📧 Email: ${email}
 🔑 Password: ${password}
 
-⚠️ IMPORTANT: Your account is locked to 1 device. Please log in on the laptop or computer you will use for studying.
+⚠️ IMPORTANT: You can use this login on up to ${APP_CONFIG.MAX_DEVICES || 3} devices (e.g. laptop, phone, tablet). Please don't share it.
 
 Let me know once you log in successfully!`;
 
@@ -525,7 +528,7 @@ Let me know once you log in successfully!`;
         <strong>Password:</strong> <code style="color:var(--accent-yellow); font-weight:700;">${escapeHtml(password)}</code>
       </div>
       <div style="font-size:0.8rem; color:#A3A3A3; margin-top:0.5rem;">
-        🔒 Device Lock: Active (Will lock to their first computer upon login)
+        📱 Devices: up to ${APP_CONFIG.MAX_DEVICES || 3} per student
       </div>
     </div>
 
@@ -587,15 +590,15 @@ function viewStudentDetails(studentId) {
 
     <dl class="admin-detail-grid">
       <div><dt>Access</dt><dd><span class="admin-status ${isActive ? 'is-active' : 'is-inactive'}">${isActive ? 'Active' : 'Inactive'}</span></dd></div>
-      <div><dt>Device</dt><dd>${student.device_id ? 'Locked to 1 device' : 'Not used yet'}</dd></div>
+      <div><dt>Devices</dt><dd>${student.devices.length ? `${student.devices.length} of ${APP_CONFIG.MAX_DEVICES || 3} used` : 'Not used yet'}</dd></div>
       <div><dt>Progress</dt><dd>${student.completed_lessons} of ${totalLessons} lessons (${percent}%)</dd></div>
       <div><dt>Joined</dt><dd>${new Date(student.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</dd></div>
     </dl>
 
     <div class="admin-modal-actions">
-      ${student.device_id ? `
+      ${student.devices.length ? `
         <button onclick="closeModal('student-detail-modal'); resetStudentDeviceLock('${student.id}');" class="btn btn-outline btn-sm">
-          <span class="icon-inline">${ICONS.refresh}</span> Reset device
+          <span class="icon-inline">${ICONS.refresh}</span> Reset devices
         </button>` : ''}
       ${isActive
         ? `<button onclick="closeModal('student-detail-modal'); toggleEnrollment('${student.id}', 'inactive');" class="btn btn-outline btn-sm admin-danger-outline">Deactivate access</button>`

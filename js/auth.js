@@ -1,5 +1,5 @@
 /**
- * Amazon KDP Simplified - Authentication, Single Device Lock & Session Guards
+ * Amazon KDP Simplified - Authentication, Device Limit & Session Guards
  * Instructor: Thokerunga Innocent
  */
 
@@ -25,7 +25,7 @@ function getSupabase() {
 }
 
 // -----------------------------------------------------------------------------
-// SINGLE DEVICE FINGERPRINT / IDENTIFIER
+// DEVICE IDENTIFIER (one per browser)
 // -----------------------------------------------------------------------------
 function getLocalDeviceId() {
   let deviceId = null;
@@ -61,7 +61,7 @@ function getDemoStudents() {
       full_name: "Demo Student",
       is_admin: false,
       enrollment_status: "active",
-      device_id: null, // Unbound until first login
+      device_ids: [], // Filled as the student logs in (up to MAX_DEVICES)
       created_at: new Date().toISOString()
     },
     {
@@ -71,7 +71,7 @@ function getDemoStudents() {
       full_name: "Thokerunga Innocent (Admin)",
       is_admin: true,
       enrollment_status: "active",
-      device_id: null,
+      device_ids: [],
       created_at: new Date().toISOString()
     }
   ];
@@ -100,9 +100,16 @@ function clearDemoSession() {
 }
 
 // -----------------------------------------------------------------------------
-// AUTHENTICATION LOGIC WITH SINGLE DEVICE ENFORCEMENT
+// AUTHENTICATION LOGIC WITH DEVICE LIMIT (max devices per student)
 // -----------------------------------------------------------------------------
-const DEVICE_LOCK_MESSAGE = "DEVICE LOCK: This course account is registered to another device. Access is restricted to 1 device per student. If you changed your laptop or browser, please contact the instructor on WhatsApp for a device reset.";
+const DEVICE_LOCK_MESSAGE = `DEVICE LOCK: This account is already being used on ${(typeof APP_CONFIG !== 'undefined' && APP_CONFIG.MAX_DEVICES) || 3} devices, which is the maximum. Please contact the instructor on WhatsApp to reset your devices.`;
+
+/** A student's registered devices (works before and after the 3-device database upgrade) */
+function getDeviceList(record) {
+  if (!record) return [];
+  if (Array.isArray(record.device_ids)) return record.device_ids.filter(Boolean);
+  return record.device_id ? [record.device_id] : [];
+}
 
 /**
  * Log in student and bind/validate device lock
@@ -126,8 +133,8 @@ async function loginUser(email, password) {
 
     const user = data.user;
 
-    // 2. Enforce single-device lock on the server (secure RPC, cannot be bypassed
-    //    from the browser). Binds on first login, rejects other devices afterwards.
+    // 2. Enforce the device limit on the server (secure RPC, cannot be bypassed
+    //    from the browser). Adds new devices until the limit, then rejects extras.
     const { data: lockStatus, error: lockErr } = await client.rpc('bind_device', {
       p_device_id: currentDeviceId
     });
@@ -157,14 +164,16 @@ async function loginUser(email, password) {
       throw new Error("Incorrect password. Please verify.");
     }
 
-    // Enforce device lock for student
+    // Enforce device limit for students
     if (!student.is_admin) {
-      if (!student.device_id) {
-        // Bind to current device
-        student.device_id = currentDeviceId;
+      const devices = getDeviceList(student);
+      if (!devices.includes(currentDeviceId)) {
+        if (devices.length >= (APP_CONFIG.MAX_DEVICES || 3)) {
+          throw new Error(DEVICE_LOCK_MESSAGE);
+        }
+        student.device_ids = devices.concat(currentDeviceId);
+        delete student.device_id;
         saveDemoStudents(students);
-      } else if (student.device_id !== currentDeviceId) {
-        throw new Error(DEVICE_LOCK_MESSAGE);
       }
     }
 
@@ -203,7 +212,8 @@ async function getCurrentUser() {
       .maybeSingle();
 
     // Session copied to / still alive on a different device -> kick it out
-    if (profile && !profile.is_admin && profile.device_id && profile.device_id !== getLocalDeviceId()) {
+    const profileDevices = getDeviceList(profile);
+    if (profile && !profile.is_admin && profileDevices.length && !profileDevices.includes(getLocalDeviceId())) {
       await client.auth.signOut();
       return null;
     }
@@ -220,7 +230,7 @@ async function getCurrentUser() {
       email: session.user.email,
       full_name: profile?.full_name || 'Student',
       is_admin: profile?.is_admin || false,
-      device_id: profile?.device_id || null,
+      device_ids: profileDevices,
       enrollment_status: enrollment?.status || 'inactive',
       raw_user: session.user
     };
@@ -230,7 +240,8 @@ async function getCurrentUser() {
     // Always read the latest record so admin changes (deactivate, device reset) apply immediately
     const fresh = getDemoStudents().find(s => s.id === demo.id);
     if (!fresh) { clearDemoSession(); return null; }
-    if (!fresh.is_admin && fresh.device_id && fresh.device_id !== getLocalDeviceId()) {
+    const freshDevices = getDeviceList(fresh);
+    if (!fresh.is_admin && freshDevices.length && !freshDevices.includes(getLocalDeviceId())) {
       clearDemoSession();
       return null;
     }
