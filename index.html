@@ -3,246 +3,227 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student Portal Login | Amazon KDP Simplified</title>
-  <meta name="description" content="Sign in to your Amazon KDP Simplified student course portal. Access 10 practical video lessons and Book Formatter Pro.">
-  
+  <title>Log In | Amazon KDP Simplified</title>
+  <meta name="description" content="Log in to the Amazon KDP Simplified student portal by Thokerunga Innocent.">
+  <meta name="theme-color" content="#0D0D0E">
+
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Student Portal | Amazon KDP Simplified">
-  <meta property="og:description" content="Access your Amazon KDP Simplified course by Thokerunga Innocent.">
+  <meta property="og:title" content="Amazon KDP Simplified | Student Portal">
+  <meta property="og:description" content="Publish your own book on Amazon and earn in dollars. Student portal for Amazon KDP Simplified.">
   <meta property="og:image" content="assets/images/hero-book-mockup.webp">
 
+  <!-- Start loading the login service and fonts as early as possible -->
+  <link rel="preconnect" href="https://njfqmubgqfliijgairsj.supabase.co" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.0/dist/umd/supabase.js" crossorigin>
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23F5C542'><path d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/><path d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/></svg>">
 </head>
-<body style="min-height:100vh; display:flex; flex-direction:column;">
+<body class="admin-body login-body">
 
-  <!-- Site Header -->
-  <header class="site-header">
-    <div class="container nav-container">
-      <a href="index.html" class="brand-logo">
+  <header class="admin-topbar">
+    <div class="admin-topbar-inner student-topbar-inner">
+      <a href="index.html" class="brand-logo admin-brand">
         <span class="icon-inline" style="color:var(--accent-yellow);">
           <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
         </span>
-        <span>Amazon <span class="logo-accent">KDP</span> Simplified</span>
-        <span class="logo-badge">Course Portal</span>
+        <span>KDP <span class="logo-accent">Simplified</span></span>
       </a>
-
-      <div class="nav-actions">
-        <a href="#" class="btn btn-primary btn-sm btn-enroll">Enroll on Selar</a>
+      <div class="admin-topbar-actions">
+        <a href="#" class="admin-link btn-enroll">Not enrolled? <strong class="login-enroll-strong">Join on Selar</strong></a>
       </div>
     </div>
   </header>
 
-  <!-- Login Main Content Area: TWO COLUMN LAYOUT -->
-  <main class="auth-page-wrapper" style="flex:1;">
-    <div class="login-layout-grid">
-      
-      <!-- LEFT COLUMN: Course Overview & Highlights -->
-      <div class="login-info-col">
-        <div class="login-info-badge">
-          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
-          <span>Official Student Learning Portal</span>
+  <main class="login-main">
+
+    <!-- Login card (first on mobile) -->
+    <section class="login-card" aria-labelledby="login-title">
+      <h1 id="login-title">Welcome back</h1>
+      <p class="login-sub">Log in with the details you received on WhatsApp.</p>
+
+      <div id="auth-alert" class="login-alert" role="alert" hidden></div>
+
+      <form id="login-form" method="post" action="javascript:void(0)" novalidate>
+        <div class="login-field">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" name="email" placeholder="you@example.com"
+                 required autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false">
         </div>
 
-        <h1 class="login-info-title">
-          Publish on Amazon and <span class="highlight">Earn in Dollars</span>
-        </h1>
-
-        <p class="login-info-desc">
-          Welcome to the private student portal for <strong>Amazon KDP Simplified</strong>. Step-by-step video training designed for beginners in Uganda and Africa.
-        </p>
-
-        <!-- Feature List with Vector Icons -->
-        <div class="login-features-list">
-          <div class="login-feature-item">
-            <div class="login-feature-icon">
-              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-            </div>
-            <span><strong>10 Practical Lessons:</strong> From idea validation to published book.</span>
+        <div class="login-field">
+          <div class="login-label-row">
+            <label for="login-password">Password</label>
+            <a href="forgot-password.html" class="login-forgot">Forgot password?</a>
           </div>
-
-          <div class="login-feature-item">
-            <div class="login-feature-icon">
-              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-            </div>
-            <span><strong>Book Formatter Pro:</strong> Automated Amazon-ready book formatting software included.</span>
-          </div>
-
-          <div class="login-feature-item">
-            <div class="login-feature-icon">
-              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            </div>
-            <span><strong>1-Device Security:</strong> Your account is protected and locked to your study computer.</span>
-          </div>
-
-          <div class="login-feature-item">
-            <div class="login-feature-icon">
-              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            </div>
-            <span><strong>Get Paid in Uganda:</strong> Complete step-by-step USD bank account setup.</span>
+          <div class="login-password-wrap">
+            <input type="password" id="login-password" name="password" placeholder="Your password"
+                   required autocomplete="current-password">
+            <button type="button" class="login-eye" id="toggle-password" aria-label="Show password" aria-pressed="false">
+              <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              <svg class="eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+            </button>
           </div>
         </div>
 
-        <!-- Instructor Badge Card -->
-        <div class="login-instructor-card">
-          <div class="instructor-avatar-sm">TI</div>
-          <div class="instructor-text">
-            <h4>Thokerunga Innocent</h4>
-            <p>Instructor & Creator of Book Formatter Pro</p>
-          </div>
-        </div>
-      </div>
+        <button type="submit" id="btn-login-submit" class="login-submit">
+          <span class="login-submit-text">Log in</span>
+          <span class="login-spinner" aria-hidden="true"></span>
+        </button>
+      </form>
 
-      <!-- RIGHT COLUMN: Sleek Login Form Card -->
-      <div class="auth-card">
-        
-        <div class="auth-header" style="text-align:left; margin-bottom:1.5rem;">
-          <h2 style="font-size:1.6rem; margin-bottom:0.25rem;">Sign In to Course</h2>
-          <p style="color:var(--text-secondary-dark); font-size:0.875rem;">
-            Enter your assigned student credentials
-          </p>
-        </div>
+      <p class="login-device-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        Your account works on one device: the first one you log in with.
+      </p>
 
-        <!-- Device Lock Notice Badge -->
-        <div style="background:rgba(245, 197, 66, 0.08); border:1px solid rgba(245, 197, 66, 0.22); border-radius:10px; padding:0.85rem 1rem; margin-bottom:1.5rem; display:flex; align-items:flex-start; gap:0.65rem;">
-          <span style="color:var(--accent-yellow); margin-top:2px;">
-            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-          </span>
-          <div style="font-size:0.8rem; color:#D4D4D8; line-height:1.45;">
-            <strong style="color:var(--text-white);">Single-Device Locked:</strong> Your login binds automatically to the first computer you sign in with.
-          </div>
-        </div>
+      <a href="#" class="login-help whatsapp-support-link">
+        <span class="login-help-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+        </span>
+        <span><strong>Paid but no login yet?</strong> Message us on WhatsApp</span>
+      </a>
+    </section>
 
-        <!-- Feedback Alert -->
-        <div id="auth-alert" class="form-alert"></div>
+    <!-- Short course pitch (second on mobile) -->
+    <section class="login-pitch">
+      <p class="dash-eyebrow">Amazon KDP Simplified</p>
+      <h2>Publish on Amazon and <span class="logo-accent">earn in dollars</span></h2>
+      <p class="login-pitch-sub">Step-by-step video lessons for beginners in Uganda and across Africa, by Thokerunga Innocent.</p>
+      <ul class="login-points">
+        <li><span>10</span> practical lessons, from book idea to first sale</li>
+        <li><span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </span> Book Formatter Pro software included</li>
+        <li><span>$</span> Get paid in Uganda: USD account setup</li>
+      </ul>
+    </section>
 
-        <!-- Login Form -->
-        <form id="login-form">
-          <div class="form-group">
-            <label class="form-label" for="login-email">Assigned Email</label>
-            <input 
-              type="email" 
-              id="login-email" 
-              class="form-input" 
-              placeholder="student@example.com" 
-              required 
-              autocomplete="email"
-              autofocus
-            >
-          </div>
-
-          <div class="form-group">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
-              <label class="form-label" for="login-password" style="margin-bottom:0;">Assigned Password</label>
-              <a href="forgot-password.html" style="font-size:0.8rem; color:var(--accent-yellow);">Forgot?</a>
-            </div>
-            <input 
-              type="password" 
-              id="login-password" 
-              class="form-input" 
-              placeholder="••••••••" 
-              required 
-              autocomplete="current-password"
-            >
-          </div>
-
-          <button type="submit" id="btn-login-submit" class="btn btn-primary btn-block btn-lg" style="margin-top:1.5rem;">
-            <span>Log In to Course</span>
-            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-          </button>
-        </form>
-
-        <!-- Enrollment & WhatsApp Assistance -->
-        <div class="auth-footer" style="border-top:1px solid var(--border-dark); padding-top:1.25rem; margin-top:1.75rem; text-align:left;">
-          <p style="font-size:0.85rem; color:var(--text-secondary-dark); margin-bottom:0.5rem;">
-            Need your login details?
-          </p>
-          <p style="font-size:0.8125rem; color:var(--text-muted-dark); line-height:1.5; margin-bottom:1rem;">
-            After paying on Selar, send your payment email to the instructor on WhatsApp to receive your unique login.
-          </p>
-
-          <a href="#" class="btn btn-whatsapp btn-sm btn-block whatsapp-support-link" style="margin-bottom:0.75rem; color:#FFFFFF !important; text-decoration:none !important;">
-            <svg class="svg-icon" viewBox="0 0 24 24" width="18" height="18" fill="#FFFFFF" style="color:#FFFFFF !important;"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 15 3.8 13.47 3.8 11.91C3.81 7.37 7.5 3.67 12.05 3.67M9.53 7.34C9.36 7.34 9.09 7.41 8.86 7.65C8.63 7.9 8 8.49 8 9.71C8 10.93 8.89 12.11 9.01 12.28C9.14 12.45 10.74 14.92 13.19 15.97C13.78 16.23 14.23 16.38 14.59 16.49C15.18 16.68 15.72 16.65 16.14 16.59C16.62 16.51 17.6 15.99 17.81 15.41C18.01 14.82 18.01 14.32 17.95 14.21C17.89 14.11 17.72 14.05 17.47 13.93C17.22 13.8 15.99 13.2 15.76 13.11C15.53 13.03 15.37 12.99 15.2 13.24C15.04 13.49 14.57 14.05 14.42 14.21C14.28 14.38 14.13 14.4 13.88 14.28C13.64 14.15 12.84 13.89 11.9 13.05C11.16 12.39 10.66 11.58 10.52 11.33C10.37 11.08 10.5 10.95 10.63 10.82C10.74 10.71 10.88 10.53 11.01 10.38C11.13 10.24 11.17 10.13 11.26 9.97C11.34 9.8 11.3 9.66 11.24 9.53C11.17 9.41 10.69 8.24 10.49 7.75C10.29 7.27 10.09 7.33 9.93 7.33C9.79 7.33 9.66 7.34 9.53 7.34Z"/></svg>
-            <span style="color:#FFFFFF !important; font-weight:600; text-decoration:none !important;">Message on WhatsApp</span>
-          </a>
-
-          <div style="font-size:0.8rem; color:var(--text-muted-dark); margin-top:0.75rem;">
-            Not enrolled yet? <a href="#" class="btn-enroll" style="color:var(--accent-yellow); font-weight:600;">Enroll on Selar</a>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
   </main>
 
-  <!-- Site Footer -->
-  <footer class="site-footer">
-    <div class="container" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; font-size:0.8125rem; color:var(--text-muted-dark);">
-      <div>&copy; <span class="current-year">2026</span> Thokerunga Innocent. Amazon KDP Simplified. All Rights Reserved.</div>
-      <div>
-        <a href="terms.html" style="color:var(--text-muted-dark); margin-right:1rem;">Terms</a>
-        <a href="privacy.html" style="color:var(--text-muted-dark);">Privacy</a>
-      </div>
-    </div>
+  <footer class="dash-footer">
+    &copy; <span class="current-year">2026</span> Thokerunga Innocent &bull; <a href="terms.html">Terms</a> &bull; <a href="privacy.html">Privacy</a>
   </footer>
 
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.0/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.0/dist/umd/supabase.js" crossorigin></script>
   <script src="js/config.js"></script>
   <script src="js/icons.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/app.js"></script>
 
   <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      // If already logged in, redirect straight to dashboard or admin
-      const user = await getCurrentUser();
-      if (user) {
-        window.location.href = user.is_admin ? 'admin.html' : 'dashboard.html';
-        return;
-      }
-
+    (function () {
       const form = document.getElementById('login-form');
+      const emailInput = document.getElementById('login-email');
+      const passInput = document.getElementById('login-password');
       const submitBtn = document.getElementById('btn-login-submit');
       const alertBox = document.getElementById('auth-alert');
+      const eyeBtn = document.getElementById('toggle-password');
+      const LAST_EMAIL_KEY = 'kdp_last_login_email';
 
+      // Remember the last email on this device (convenience only)
+      try {
+        const saved = localStorage.getItem(LAST_EMAIL_KEY);
+        if (saved) emailInput.value = saved;
+      } catch (e) {}
+      (emailInput.value ? passInput : emailInput).focus();
+
+      eyeBtn.addEventListener('click', () => {
+        const show = passInput.type === 'password';
+        passInput.type = show ? 'text' : 'password';
+        eyeBtn.setAttribute('aria-pressed', String(show));
+        eyeBtn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        eyeBtn.classList.toggle('is-on', show);
+        passInput.focus();
+      });
+
+      function showError(html) {
+        alertBox.innerHTML = html;
+        alertBox.hidden = false;
+      }
+
+      function setLoading(on, label) {
+        submitBtn.disabled = on;
+        submitBtn.classList.toggle('is-loading', on);
+        submitBtn.querySelector('.login-submit-text').textContent = label || 'Log in';
+      }
+
+      // Turn technical errors into plain language
+      function friendlyError(err) {
+        const msg = String((err && err.message) || err || '');
+        if (msg.startsWith('DEVICE LOCK')) {
+          return `<strong>This account is linked to another device.</strong>
+                  Each login works on one device only. Changed your laptop or browser?
+                  <a href="${APP_CONFIG.WHATSAPP_SUPPORT_URL}" target="_blank" rel="noopener noreferrer">Ask us on WhatsApp</a> to reset it.`;
+        }
+        if (/invalid login credentials|incorrect password|invalid email or student/i.test(msg)) {
+          return '<strong>Email or password is incorrect.</strong> Check for typos, or use "Forgot password?".';
+        }
+        if (/email not confirmed/i.test(msg)) {
+          return '<strong>Your account is not confirmed yet.</strong> Please message us on WhatsApp.';
+        }
+        if (/failed to fetch|network|load failed|could not load|connection/i.test(msg)) {
+          return '<strong>Can\'t connect right now.</strong> Check your internet connection and try again.';
+        }
+        if (/too many|rate limit/i.test(msg)) {
+          return '<strong>Too many attempts.</strong> Please wait a minute and try again.';
+        }
+        const safe = msg.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+        return `<strong>Couldn't log you in.</strong> ${safe}`;
+      }
+
+      function goToHome(user) {
+        const redirect = new URLSearchParams(window.location.search).get('redirect');
+        const safeRedirect = redirect && /^[a-z0-9\-]+\.html(\?[^#]*)?$/i.test(redirect) ? redirect : null;
+        window.location.replace(safeRedirect || (user && user.is_admin ? 'admin.html' : 'dashboard.html'));
+      }
+
+      // The form works immediately; no waiting for the session check below
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('login-email').value.trim();
-        const password = document.getElementById('login-password').value;
+        if (submitBtn.disabled) return;
 
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Verifying device & login...';
-        alertBox.className = 'form-alert';
-        alertBox.style.display = 'none';
+        const email = emailInput.value.trim();
+        const password = passInput.value;
+        alertBox.hidden = true;
 
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          showError('<strong>Please enter a valid email address.</strong>');
+          emailInput.focus();
+          return;
+        }
+        if (!password) {
+          showError('<strong>Please enter your password.</strong>');
+          passInput.focus();
+          return;
+        }
+
+        setLoading(true, 'Logging in…');
         try {
           await loginUser(email, password);
-          const currentUser = await getCurrentUser();
-
-          const urlParams = new URLSearchParams(window.location.search);
-          const redirect = urlParams.get('redirect');
-
-          // Only allow redirects to pages on this site (blocks javascript: / external links)
-          const safeRedirect = redirect && /^[a-z0-9\-]+\.html(\?[^#]*)?$/i.test(redirect) ? redirect : null;
-
-          if (safeRedirect) {
-            window.location.href = safeRedirect;
-          } else if (currentUser && currentUser.is_admin) {
-            window.location.href = 'admin.html';
-          } else {
-            window.location.href = 'dashboard.html';
-          }
+          try { localStorage.setItem(LAST_EMAIL_KEY, email); } catch (err) {}
+          setLoading(true, 'Opening your course…');
+          const user = await getCurrentUser();
+          goToHome(user);
         } catch (error) {
-          alertBox.className = 'form-alert alert-error';
-          alertBox.innerHTML = `<strong>Access Error:</strong><br>${error.message}`;
-          alertBox.style.display = 'block';
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = `<span>Log In to Course</span> <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`;
+          setLoading(false);
+          showError(friendlyError(error));
+          passInput.select();
         }
       });
-    });
+
+      // Already logged in? Skip straight to the course.
+      document.addEventListener('DOMContentLoaded', async () => {
+        try {
+          const user = await getCurrentUser();
+          if (user) goToHome(user);
+        } catch (e) {}
+      });
+    })();
   </script>
 </body>
 </html>
