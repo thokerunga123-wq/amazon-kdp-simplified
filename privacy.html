@@ -11,48 +11,19 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
 </head>
-<body>
+<body class="admin-body">
 
-  <!-- Site Header -->
-  <header class="site-header">
-    <div class="container nav-container">
-      <a href="index.html" class="brand-logo">
-        <span>Amazon <span class="logo-accent">KDP</span> Simplified</span>
-        <span class="logo-badge">Pro</span>
+  <header class="admin-topbar">
+    <div class="admin-topbar-inner student-topbar-inner">
+      <a href="index.html" class="brand-logo admin-brand">
+        <span class="icon-inline" style="color:var(--accent-yellow);">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+        </span>
+        <span>KDP <span class="logo-accent">Simplified</span></span>
       </a>
-
-      <nav class="desktop-nav" aria-label="Main Navigation">
-        <a href="index.html" class="nav-link">Home</a>
-        <a href="course.html" class="nav-link">Course</a>
-        <a href="about.html" class="nav-link">About</a>
-        <a href="faq.html" class="nav-link">FAQ</a>
-      </nav>
-
-      <div class="nav-actions">
-        <a href="login.html" class="nav-link">Login</a>
-        <a href="#" class="btn btn-primary btn-sm btn-enroll">Enroll Now</a>
-      </div>
-
-      <button class="hamburger-btn" aria-label="Toggle navigation menu" aria-expanded="false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Mobile Drawer -->
-    <div class="mobile-nav-drawer">
-      <div class="mobile-nav-links">
-        <a href="index.html" class="nav-link">Home</a>
-        <a href="course.html" class="nav-link">Course</a>
-        <a href="about.html" class="nav-link">About</a>
-        <a href="faq.html" class="nav-link">FAQ</a>
-      </div>
-      <div class="mobile-nav-actions">
-        <a href="login.html" class="btn btn-secondary btn-block">Login</a>
-        <a href="#" class="btn btn-primary btn-block btn-enroll">Enroll Now</a>
+      <div class="admin-topbar-actions">
+        <a href="index.html" class="admin-link"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg><span>Student portal</span></a>
+        <a href="#" class="admin-link btn-enroll"><strong class="login-enroll-strong">Join on Selar</strong></a>
       </div>
     </div>
   </header>
@@ -110,42 +81,8 @@
     </section>
   </main>
 
-  <!-- Site Footer -->
-  <footer class="site-footer">
-    <div class="container">
-      <div class="footer-grid">
-        <div class="footer-brand">
-          <h3>Amazon KDP Simplified</h3>
-          <p>By Thokerunga Innocent</p>
-        </div>
-        <div class="footer-col">
-          <h4>Navigation</h4>
-          <div class="footer-links">
-            <a href="index.html">Home</a>
-            <a href="course.html">Course</a>
-            <a href="about.html">About</a>
-            <a href="faq.html">FAQ</a>
-          </div>
-        </div>
-        <div class="footer-col">
-          <h4>Legal</h4>
-          <div class="footer-links">
-            <a href="terms.html">Terms of Service</a>
-            <a href="privacy.html">Privacy Policy</a>
-            <a href="contact.html">Contact Us</a>
-          </div>
-        </div>
-        <div class="footer-col">
-          <h4>WhatsApp Support</h4>
-          <a href="#" class="btn btn-whatsapp btn-sm btn-block whatsapp-support-link">
-            💬 WhatsApp Support
-          </a>
-        </div>
-      </div>
-      <div class="footer-bottom">
-        <div>&copy; <span class="current-year">2026</span> Thokerunga Innocent. All Rights Reserved.</div>
-      </div>
-    </div>
+  <footer class="dash-footer">
+    &copy; <span class="current-year">2026</span> Thokerunga Innocent &bull; <a href="terms.html">Terms</a> &bull; <a href="privacy.html">Privacy</a>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.0/dist/umd/supabase.js"></script>

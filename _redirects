@@ -5,10 +5,16 @@
 /lesson              /lesson.html            200
 /profile             /profile.html           200
 /admin               /admin.html             200
-/course              /course.html            200
-/about               /about.html             200
-/faq                 /faq.html               200
-/contact             /contact.html           200
 /terms               /terms.html             200
 /privacy             /privacy.html           200
 /forgot-password     /forgot-password.html   200
+
+# Sales/info pages now live on Selar
+/course              https://selar.com/amazon-kdp-simplified   301!
+/course.html         https://selar.com/amazon-kdp-simplified   301!
+/about               https://selar.com/amazon-kdp-simplified   301!
+/about.html          https://selar.com/amazon-kdp-simplified   301!
+/faq                 https://selar.com/amazon-kdp-simplified   301!
+/faq.html            https://selar.com/amazon-kdp-simplified   301!
+/contact             https://selar.com/amazon-kdp-simplified   301!
+/contact.html        https://selar.com/amazon-kdp-simplified   301!

@@ -11,47 +11,21 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23F5C542'><path d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/><circle cx='12' cy='7' r='4'/></svg>">
 </head>
-<body>
+<body class="admin-body">
 
-  <!-- Site Header -->
-  <header class="site-header">
-    <div class="container nav-container">
-      <a href="dashboard.html" class="brand-logo">
+  <header class="admin-topbar">
+    <div class="admin-topbar-inner student-topbar-inner">
+      <a href="dashboard.html" class="brand-logo admin-brand">
         <span class="icon-inline" style="color:var(--accent-yellow);">
           <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
         </span>
-        <span>Amazon <span class="logo-accent">KDP</span> Simplified</span>
-        <span class="logo-badge">Student Portal</span>
+        <span>KDP <span class="logo-accent">Simplified</span></span>
       </a>
-
-      <nav class="desktop-nav" aria-label="Main Navigation">
-        <a href="dashboard.html" class="nav-link">Dashboard</a>
-        <a href="course.html" class="nav-link">Curriculum</a>
-        <a href="faq.html" class="nav-link">FAQ</a>
-      </nav>
-
-      <div class="nav-actions">
-        <!-- Injected via auth.js -->
-      </div>
-
-      <button class="hamburger-btn" aria-label="Toggle navigation menu" aria-expanded="false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Mobile Drawer -->
-    <div class="mobile-nav-drawer">
-      <div class="mobile-nav-links">
-        <a href="dashboard.html" class="nav-link">Dashboard</a>
-        <a href="profile.html" class="nav-link active">Profile</a>
-        <a href="course.html" class="nav-link">Curriculum</a>
-      </div>
-      <div class="mobile-nav-actions">
-        <button onclick="logoutUser()" class="btn btn-secondary btn-block">Log Out</button>
+      <div class="admin-topbar-actions">
+        <a href="dashboard.html" class="admin-link"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg><span>My course</span></a>
+        <button onclick="logoutUser()" class="admin-icon-btn" title="Log out" aria-label="Log out">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </button>
       </div>
     </div>
   </header>
@@ -64,9 +38,6 @@
           <h1 style="font-size:1.9rem; margin-bottom:0.25rem;">My Account & Security</h1>
           <p style="color:var(--text-secondary-dark); font-size:0.9rem;">Course access details and device registration</p>
         </div>
-        <button onclick="logoutUser()" class="btn btn-outline btn-sm">
-          Log Out
-        </button>
       </div>
 
       <div id="profile-alert" class="form-alert"></div>
@@ -135,14 +106,8 @@
     </div>
   </main>
 
-  <!-- Site Footer -->
-  <footer class="site-footer">
-    <div class="container">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; font-size:0.8125rem; color:var(--text-muted-dark);">
-        <div>&copy; <span class="current-year">2026</span> Thokerunga Innocent. All Rights Reserved.</div>
-        <div><a href="dashboard.html" style="color:var(--text-muted-dark);">Back to Dashboard</a></div>
-      </div>
-    </div>
+  <footer class="dash-footer">
+    &copy; <span class="current-year">2026</span> Thokerunga Innocent &bull; <a href="terms.html">Terms</a> &bull; <a href="privacy.html">Privacy</a>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.0/dist/umd/supabase.js"></script>
