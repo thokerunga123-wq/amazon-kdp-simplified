@@ -11,13 +11,44 @@ async function initAdminDashboard() {
   const adminUser = await requireAdmin();
   if (!adminUser) return;
 
+  const displayName = (adminUser.full_name || adminUser.email || 'Administrator').replace(/\s*\(admin\)\s*/i, '').trim();
   const adminNameEl = document.getElementById('admin-user-name');
-  if (adminNameEl) {
-    adminNameEl.textContent = adminUser.full_name || 'Administrator';
-  }
+  if (adminNameEl) adminNameEl.textContent = displayName;
+  const avatarEl = document.getElementById('admin-avatar');
+  if (avatarEl) avatarEl.textContent = getInitials(displayName);
 
-  await loadStudents();
   attachAdminEventListeners();
+  initAdminTabs();
+  await loadStudents();
+  await loadAdminLessons();
+}
+
+function getInitials(name) {
+  const parts = String(name || '').replace(/\(.*?\)/g, '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  return ((parts[0][0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+}
+
+/**
+ * Students / Lessons tabs (remembers the last tab via the URL hash)
+ */
+function initAdminTabs() {
+  const tabs = document.querySelectorAll('.admin-tab');
+  const show = (name) => {
+    tabs.forEach(t => {
+      const on = t.dataset.tab === name;
+      t.classList.toggle('active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    document.querySelectorAll('.admin-panel').forEach(p => {
+      p.hidden = p.id !== `panel-${name}`;
+    });
+    if (window.location.hash !== `#${name}`) {
+      history.replaceState(null, '', `#${name}`);
+    }
+  };
+  tabs.forEach(t => t.addEventListener('click', () => show(t.dataset.tab)));
+  show(window.location.hash === '#lessons' ? 'lessons' : 'students');
 }
 
 /**
@@ -139,13 +170,12 @@ function renderStudentTable() {
   });
 
   if (filtered.length === 0) {
+    const hasAny = allStudents.some(st => !st.is_admin);
     tableBody.innerHTML = `
       <tr>
-        <td colspan="6" style="text-align:center; padding:3rem; color:var(--text-secondary-dark);">
-          <div style="font-size:1.1rem; margin-bottom:0.5rem;">No students found.</div>
-          <button onclick="openCreateStudentModal()" class="btn btn-primary btn-sm">
-            Generate Student Credentials
-          </button>
+        <td colspan="6" class="admin-empty">
+          <div class="admin-empty-title">${hasAny ? 'No students match your search.' : 'No students yet.'}</div>
+          <div class="admin-empty-sub">${hasAny ? 'Try a different name, email or filter.' : 'When someone pays on Selar, click <strong>Add student</strong> to create their login.'}</div>
         </td>
       </tr>
     `;
@@ -153,61 +183,57 @@ function renderStudentTable() {
   }
 
   tableBody.innerHTML = '';
+  const totalLessons = APP_CONFIG.LESSONS_DATA.length;
 
   filtered.forEach(student => {
     const row = document.createElement('tr');
-    const percent = Math.round((student.completed_lessons / 10) * 100);
+    const percent = Math.round((student.completed_lessons / totalLessons) * 100);
     const dateFormatted = new Date(student.created_at).toLocaleDateString('en-GB', {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
     });
-
+    const isActive = student.status === 'active';
     const isDeviceLocked = Boolean(student.device_id);
 
     row.innerHTML = `
       <td>
-        <div style="font-weight:600; color:var(--text-white);">${escapeHtml(student.full_name)}</div>
-        <div style="font-family:monospace; font-size:0.8rem; color:#888;">${escapeHtml(student.email)}</div>
-      </td>
-      <td>
-        <span class="status-badge ${student.status}">
-          ${student.status}
-        </span>
-      </td>
-      <td>
-        <div style="display:flex; align-items:center; gap:0.5rem;">
-          <div style="flex:1; max-width:70px; height:6px; background:#2A2A2A; border-radius:3px; overflow:hidden;">
-            <div style="height:100%; width:${percent}%; background:var(--accent-yellow);"></div>
+        <div class="admin-student">
+          <span class="admin-student-avatar">${escapeHtml(getInitials(student.full_name || student.email))}</span>
+          <div class="admin-student-text">
+            <div class="admin-student-name">${escapeHtml(student.full_name || 'Student')}</div>
+            <div class="admin-student-email">${escapeHtml(student.email)}</div>
           </div>
-          <span style="font-size:0.8rem; color:#A3A3A3;">${student.completed_lessons}/10</span>
+        </div>
+      </td>
+      <td>
+        <span class="admin-status ${isActive ? 'is-active' : 'is-inactive'}">${isActive ? 'Active' : 'Inactive'}</span>
+      </td>
+      <td>
+        <div class="admin-progress" title="${student.completed_lessons} of ${totalLessons} lessons completed">
+          <div class="admin-progress-track"><div class="admin-progress-fill" style="width:${percent}%"></div></div>
+          <span>${student.completed_lessons}/${totalLessons}</span>
         </div>
       </td>
       <td>
         ${isDeviceLocked
-          ? `<div style="display:flex; align-items:center; gap:0.35rem; color:#6EE7B7; font-size:0.8rem;">
-               <span class="icon-inline">${ICONS.lock}</span>
-               <span>Locked to 1 Device</span>
-             </div>
-             <button onclick="resetStudentDeviceLock('${student.id}')" class="btn-text-action" title="Clear device lock so student can log in on a new device">
-               Reset Device
-             </button>`
-          : `<div style="display:flex; align-items:center; gap:0.35rem; color:#FBBF24; font-size:0.8rem;">
-               <span class="icon-inline">${ICONS.device}</span>
-               <span>Unbound (Awaiting 1st login)</span>
+          ? `<div class="admin-device is-locked">
+               <span class="icon-inline">${ICONS.lock}</span><span>Locked</span>
+               <button onclick="resetStudentDeviceLock('${student.id}')" class="admin-text-btn" title="Let the student log in on a new device">Reset</button>
              </div>`
+          : `<div class="admin-device"><span class="icon-inline">${ICONS.device}</span><span>Not used yet</span></div>`
         }
       </td>
-      <td style="color:var(--text-muted-dark); font-size:0.8rem;">
-        ${dateFormatted}
-      </td>
-      <td>
-        <div style="display:flex; gap:0.4rem; justify-content:flex-end; flex-wrap:wrap;">
-          ${student.status === 'active' 
-            ? `<button onclick="toggleEnrollment('${student.id}', 'inactive')" class="btn btn-outline btn-sm" style="color:var(--status-error); border-color:var(--status-error-bg);">Deactivate</button>` 
-            : `<button onclick="toggleEnrollment('${student.id}', 'active')" class="btn btn-primary btn-sm">Activate</button>`
+      <td class="admin-muted">${dateFormatted}</td>
+      <td class="col-actions">
+        <div class="admin-row-actions">
+          ${isActive
+            ? `<button onclick="toggleEnrollment('${student.id}', 'inactive')" class="admin-btn-ghost is-danger">Deactivate</button>`
+            : `<button onclick="toggleEnrollment('${student.id}', 'active')" class="admin-btn-solid">Activate</button>`
           }
-          <button onclick="viewStudentDetails('${student.id}')" class="btn btn-secondary btn-sm">Details</button>
+          <button onclick="viewStudentDetails('${student.id}')" class="admin-icon-btn" title="Details" aria-label="Student details">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>
+          </button>
         </div>
       </td>
     `;
@@ -288,8 +314,14 @@ async function resetStudentDeviceLock(studentId) {
 function generateRandomPassword() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let randomCode = '';
+  const bytes = new Uint32Array(6);
+  if (window.crypto && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < 6; i++) bytes[i] = Math.floor(Math.random() * 1e9);
+  }
   for (let i = 0; i < 6; i++) {
-    randomCode += chars.charAt(Math.floor(Math.random() * chars.length));
+    randomCode += chars.charAt(bytes[i] % chars.length);
   }
   return `KDP-${randomCode}`;
 }
@@ -307,10 +339,10 @@ function openCreateStudentModal() {
     <div style="margin-bottom:1.25rem;">
       <h2 style="font-size:1.35rem; margin-bottom:0.25rem; display:flex; align-items:center; gap:0.5rem;">
         <span class="icon-inline" style="color:var(--accent-yellow);">${ICONS.key}</span>
-        Generate Student Credentials
+        Add student
       </h2>
       <p style="color:var(--text-secondary-dark); font-size:0.875rem;">
-        Create unique login credentials for a student who paid on Selar. Their account will be locked to their first device.
+        Creates a login for someone who paid on Selar. Access is active immediately and locks to the first device they use.
       </p>
     </div>
 
@@ -339,7 +371,7 @@ function openCreateStudentModal() {
       <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
         <button type="button" onclick="closeModal('student-detail-modal')" class="btn btn-outline btn-sm">Cancel</button>
         <button type="submit" id="btn-save-gen-student" class="btn btn-primary btn-sm">
-          Save & Generate Access
+          Create login
         </button>
       </div>
     </form>
@@ -419,7 +451,7 @@ async function handleCreateStudentSubmit(e) {
       console.error("Error creating student in Supabase:", err);
       showToast(err.message || "Failed to create student in Supabase", "error");
       saveBtn.disabled = false;
-      saveBtn.textContent = 'Save & Generate Access';
+      saveBtn.textContent = 'Create login';
       return;
     }
   } else {
@@ -428,7 +460,7 @@ async function handleCreateStudentSubmit(e) {
     if (students.some(s => s.email.toLowerCase() === email.toLowerCase())) {
       showToast("A student with this email already exists.", "error");
       saveBtn.disabled = false;
-      saveBtn.textContent = 'Save & Generate Access';
+      saveBtn.textContent = 'Create login';
       return;
     }
     const newStudent = {
@@ -538,49 +570,56 @@ function copyStudentMessage() {
 function viewStudentDetails(studentId) {
   const student = allStudents.find(s => s.id === studentId);
   if (!student) return;
+  const totalLessons = APP_CONFIG.LESSONS_DATA.length;
+  const percent = Math.round((student.completed_lessons / totalLessons) * 100);
+  const isActive = student.status === 'active';
 
   const modalEl = document.getElementById('student-modal-body');
-  if (modalEl) {
-    modalEl.innerHTML = `
-      <div style="margin-bottom:1.5rem;">
-        <h2 style="font-size:1.35rem; margin-bottom:0.25rem;">${escapeHtml(student.full_name)}</h2>
-        <div style="color:var(--text-secondary-dark); font-size:0.9rem;">${escapeHtml(student.email)}</div>
-        <div style="margin-top:0.5rem; display:flex; gap:0.5rem; align-items:center;">
-          <span class="status-badge ${student.status}">${student.status}</span>
-          ${student.device_id 
-            ? '<span style="font-size:0.75rem; color:#6EE7B7;">🔒 Locked to 1 Device</span>' 
-            : '<span style="font-size:0.75rem; color:#FBBF24;">📱 Unbound (Awaiting 1st login)</span>'
-          }
-        </div>
+  if (!modalEl) return;
+  modalEl.innerHTML = `
+    <div class="admin-modal-head">
+      <span class="admin-student-avatar lg">${escapeHtml(getInitials(student.full_name || student.email))}</span>
+      <div>
+        <h2>${escapeHtml(student.full_name || 'Student')}</h2>
+        <div class="admin-muted">${escapeHtml(student.email)}</div>
       </div>
+    </div>
 
-      <div style="background:#141414; border:1px solid #2B2B2B; border-radius:8px; padding:1.25rem; margin-bottom:1.5rem;">
-        <div style="font-weight:600; margin-bottom:0.5rem; color:var(--accent-yellow);">Course Completion:</div>
-        <div style="font-size:1.2rem; font-weight:700; margin-bottom:0.35rem;">${student.completed_lessons} of 10 Lessons (${Math.round((student.completed_lessons/10)*100)}%)</div>
-        <div style="font-size:0.8rem; color:#888;">Registered on: ${new Date(student.created_at).toLocaleString()}</div>
-      </div>
+    <dl class="admin-detail-grid">
+      <div><dt>Access</dt><dd><span class="admin-status ${isActive ? 'is-active' : 'is-inactive'}">${isActive ? 'Active' : 'Inactive'}</span></dd></div>
+      <div><dt>Device</dt><dd>${student.device_id ? 'Locked to 1 device' : 'Not used yet'}</dd></div>
+      <div><dt>Progress</dt><dd>${student.completed_lessons} of ${totalLessons} lessons (${percent}%)</dd></div>
+      <div><dt>Joined</dt><dd>${new Date(student.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</dd></div>
+    </dl>
 
-      <div style="display:flex; justify-content:space-between; gap:0.75rem; flex-wrap:wrap;">
-        ${student.device_id ? `
-          <button onclick="resetStudentDeviceLock('${student.id}'); closeModal('student-detail-modal');" class="btn btn-outline btn-sm">
-            <span class="icon-inline">${ICONS.refresh}</span> Reset Device Lock
-          </button>
-        ` : ''}
-
-        ${student.status === 'active'
-          ? `<button onclick="toggleEnrollment('${student.id}', 'inactive'); closeModal('student-detail-modal');" class="btn btn-outline btn-sm" style="color:var(--status-error);">Deactivate Access</button>`
-          : `<button onclick="toggleEnrollment('${student.id}', 'active'); closeModal('student-detail-modal');" class="btn btn-primary btn-sm">Activate Access</button>`
-        }
-      </div>
-    `;
-    openModal('student-detail-modal');
-  }
+    <div class="admin-modal-actions">
+      ${student.device_id ? `
+        <button onclick="closeModal('student-detail-modal'); resetStudentDeviceLock('${student.id}');" class="btn btn-outline btn-sm">
+          <span class="icon-inline">${ICONS.refresh}</span> Reset device
+        </button>` : ''}
+      ${isActive
+        ? `<button onclick="closeModal('student-detail-modal'); toggleEnrollment('${student.id}', 'inactive');" class="btn btn-outline btn-sm admin-danger-outline">Deactivate access</button>`
+        : `<button onclick="closeModal('student-detail-modal'); toggleEnrollment('${student.id}', 'active');" class="btn btn-primary btn-sm">Activate access</button>`
+      }
+    </div>
+  `;
+  openModal('student-detail-modal');
 }
 
 /**
  * Filter & Search Event Listeners
  */
 function attachAdminEventListeners() {
+  const overlay = document.getElementById('student-detail-modal');
+  if (overlay) {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal('student-detail-modal');
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal('student-detail-modal');
+  });
+
   const searchInput = document.getElementById('admin-search-input');
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
@@ -600,12 +639,203 @@ function attachAdminEventListeners() {
   });
 }
 
-function escapeHtml(text) {
-  if (!text) return '';
-  return String(text)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+
+// =============================================================================
+// LESSONS TAB: edit video + details for each lesson
+// =============================================================================
+
+async function loadAdminLessons() {
+  await loadCourseLessons(true);
+  renderAdminLessons();
+}
+
+function renderAdminLessons() {
+  const list = document.getElementById('admin-lessons-list');
+  if (!list) return;
+  const lessons = APP_CONFIG.LESSONS_DATA;
+  const withVideo = lessons.filter(l => isRealVideoId(l.wistiaId)).length;
+
+  const summary = document.getElementById('lessons-video-summary');
+  if (summary) {
+    summary.textContent = `${withVideo} of ${lessons.length} videos added`;
+    summary.classList.toggle('is-complete', withVideo === lessons.length);
+  }
+
+  list.innerHTML = '';
+  lessons.forEach(lesson => {
+    const hasVideo = isRealVideoId(lesson.wistiaId);
+    const row = document.createElement('div');
+    row.className = 'admin-lesson-row';
+    row.innerHTML = `
+      <div class="admin-lesson-thumb ${hasVideo ? 'has-video' : ''}">
+        ${hasVideo
+          ? `<img src="https://fast.wistia.com/embed/medias/${encodeURIComponent(lesson.wistiaId)}/swatch" alt="" loading="lazy" onerror="this.remove()">
+             <span class="admin-lesson-play"><svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg></span>`
+          : `<span class="admin-lesson-num">${String(lesson.number).padStart(2, '0')}</span>`}
+      </div>
+      <div class="admin-lesson-info">
+        <div class="admin-lesson-title">
+          <span class="admin-muted">Lesson ${lesson.number}</span>
+          <strong>${escapeHtml(lesson.title)}</strong>
+        </div>
+        <div class="admin-lesson-meta">
+          <span>${escapeHtml(lesson.duration)}</span>
+          ${hasVideo
+            ? `<span class="admin-video-tag is-set"><i class="dot dot-green"></i>Video added</span>`
+            : `<span class="admin-video-tag"><i class="dot dot-amber"></i>No video yet</span>`}
+        </div>
+      </div>
+      <button class="${hasVideo ? 'admin-btn-ghost' : 'admin-btn-solid'}" onclick="openLessonEditor(${lesson.number})">
+        ${hasVideo ? 'Edit' : 'Add video'}
+      </button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function openLessonEditor(lessonNumber) {
+  const lesson = APP_CONFIG.LESSONS_DATA.find(l => l.number === lessonNumber);
+  const modalEl = document.getElementById('student-modal-body');
+  if (!lesson || !modalEl) return;
+  const currentId = isRealVideoId(lesson.wistiaId) ? lesson.wistiaId : '';
+
+  modalEl.innerHTML = `
+    <div class="admin-modal-title">
+      <span class="admin-muted">Lesson ${lesson.number}</span>
+      <h2>Edit lesson</h2>
+    </div>
+
+    <form id="lesson-edit-form" class="admin-form" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="le-video">Wistia video</label>
+        <input type="text" id="le-video" class="form-input" placeholder="Paste the Wistia link or video ID" value="${escapeHtml(currentId)}" autocomplete="off" spellcheck="false">
+        <span class="form-help" id="le-video-help">In Wistia open the video, click <strong>Share</strong> and copy the link. A link, embed code or 10-character ID all work.</span>
+      </div>
+
+      <div class="admin-video-preview" id="le-preview"></div>
+
+      <div class="admin-form-row">
+        <div class="form-group">
+          <label class="form-label" for="le-title">Title</label>
+          <input type="text" id="le-title" class="form-input" value="${escapeHtml(lesson.title)}" required maxlength="140">
+        </div>
+        <div class="form-group admin-form-narrow">
+          <label class="form-label" for="le-duration">Duration</label>
+          <input type="text" id="le-duration" class="form-input" value="${escapeHtml(lesson.duration)}" placeholder="e.g. 25 mins" maxlength="20">
+        </div>
+      </div>
+
+      <details class="admin-more">
+        <summary>Description &amp; notes</summary>
+        <div class="form-group">
+          <label class="form-label" for="le-desc">Short description</label>
+          <textarea id="le-desc" class="form-input" rows="3" maxlength="600">${escapeHtml(lesson.description)}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="le-notes">Notes &amp; action steps</label>
+          <textarea id="le-notes" class="form-input" rows="8">${escapeHtml(lesson.notes)}</textarea>
+          <span class="form-help">Start a line with • to make it a bullet. A line starting with "• Action Step:" is highlighted.</span>
+        </div>
+      </details>
+
+      <div class="admin-modal-actions">
+        ${currentId ? `<button type="button" class="btn btn-outline btn-sm admin-danger-outline" id="le-remove">Remove video</button>` : ''}
+        <span style="flex:1"></span>
+        <button type="button" onclick="closeModal('student-detail-modal')" class="btn btn-outline btn-sm">Cancel</button>
+        <button type="submit" id="le-save" class="btn btn-primary btn-sm">Save lesson</button>
+      </div>
+    </form>
+  `;
+
+  const videoInput = document.getElementById('le-video');
+  const help = document.getElementById('le-video-help');
+  const preview = document.getElementById('le-preview');
+  const defaultHelp = help.innerHTML;
+
+  const updatePreview = () => {
+    const raw = videoInput.value.trim();
+    const id = parseWistiaId(raw);
+    videoInput.classList.toggle('is-invalid', Boolean(raw) && !id);
+    if (raw && !id) {
+      help.innerHTML = '<span class="admin-error-text">That doesn\'t look like a Wistia link or ID. Copy the link from Wistia\'s Share button.</span>';
+      preview.innerHTML = '';
+      return;
+    }
+    help.innerHTML = id ? `Video ID: <strong>${escapeHtml(id)}</strong>` : defaultHelp;
+    if (!id) { preview.innerHTML = ''; return; }
+    if (preview.dataset.id === id) return;
+    preview.dataset.id = id;
+    preview.innerHTML = `<iframe src="https://fast.wistia.net/embed/iframe/${encodeURIComponent(id)}?videoFoam=true" title="Video preview" allow="autoplay; fullscreen" frameborder="0"></iframe>`;
+  };
+  videoInput.addEventListener('input', updatePreview);
+  updatePreview();
+
+  const removeBtn = document.getElementById('le-remove');
+  if (removeBtn) {
+    removeBtn.onclick = () => {
+      videoInput.value = '';
+      preview.dataset.id = '';
+      updatePreview();
+      removeBtn.remove();
+    };
+  }
+
+  document.getElementById('lesson-edit-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    saveLesson(lessonNumber);
+  });
+
+  openModal('student-detail-modal');
+  setTimeout(() => videoInput.focus(), 50);
+}
+
+async function saveLesson(lessonNumber) {
+  const raw = document.getElementById('le-video').value.trim();
+  const videoId = raw ? parseWistiaId(raw) : null;
+  if (raw && !videoId) {
+    showToast("Please paste a valid Wistia link or video ID.", "error");
+    return;
+  }
+  const title = document.getElementById('le-title').value.trim();
+  if (!title) {
+    showToast("The lesson needs a title.", "error");
+    return;
+  }
+
+  const fields = {
+    title,
+    duration: document.getElementById('le-duration').value.trim() || '—',
+    description: document.getElementById('le-desc').value.trim() || title,
+    notes: document.getElementById('le-notes').value.replace(/\r\n/g, '\n').trim(),
+    // The database column is required, so "no video" is stored as the placeholder
+    wistia_video_id: videoId || `WISTIA_VIDEO_ID_${lessonNumber}`
+  };
+
+  const saveBtn = document.getElementById('le-save');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+
+  const client = getSupabase();
+  if (client) {
+    const { data, error } = await client
+      .from('lessons')
+      .update(fields)
+      .eq('course_id', APP_CONFIG.COURSE_ID)
+      .eq('lesson_number', lessonNumber)
+      .select('id');
+
+    if (error || !data || !data.length) {
+      console.error("Error saving lesson:", error);
+      showToast(error ? `Could not save: ${error.message}` : "Could not save: lesson not found in the database.", "error", 7000);
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save lesson';
+      return;
+    }
+  } else {
+    saveDemoLessonOverride(lessonNumber, fields);
+  }
+
+  closeModal('student-detail-modal');
+  showToast(`Lesson ${lessonNumber} saved. Students will see the change right away.`, "success");
+  await loadAdminLessons();
 }

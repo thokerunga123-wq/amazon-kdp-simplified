@@ -120,7 +120,8 @@ async function initDashboard() {
     }
   }
 
-  // Fetch Progress
+  // Fetch lessons (latest titles/notes from the database) and progress
+  await loadCourseLessons();
   const completedNumbers = await getStudentProgress(user.id);
   const totalLessons = APP_CONFIG.LESSONS_DATA.length;
   const completedCount = completedNumbers.length;
@@ -169,11 +170,11 @@ async function initDashboard() {
             ${isCompleted ? (typeof ICONS !== 'undefined' ? ICONS.check : '✓') : String(lesson.number).padStart(2, '0')}
           </div>
           <div class="dash-lesson-details">
-            <h3>Lesson ${lesson.number}: ${lesson.title}</h3>
-            <p>${lesson.description}</p>
+            <h3>Lesson ${lesson.number}: ${escapeHtml(lesson.title)}</h3>
+            <p>${escapeHtml(lesson.description)}</p>
             <div class="dash-lesson-meta">
               <span class="icon-inline">${typeof ICONS !== 'undefined' ? ICONS.clock : ''}</span>
-              <span>${lesson.duration}</span>
+              <span>${escapeHtml(lesson.duration)}</span>
               <span>&bull;</span>
               <span>${isCompleted ? '<span style="color:var(--status-success); font-weight:600;">Completed</span>' : 'Not started'}</span>
             </div>
@@ -210,29 +211,12 @@ async function initCoursePlayer() {
     currentLessonNumber = 1;
   }
 
+  await loadCourseLessons();
   completedLessons = await getStudentProgress(currentUser.id);
-  await loadLessonVideoIdsFromDatabase();
 
   renderPlayerSidebar();
   loadLessonContent(currentLessonNumber);
   attachPlayerControls();
-}
-
-// Video IDs saved in the Supabase "lessons" table take priority over js/config.js
-let dbVideoIds = {};
-async function loadLessonVideoIdsFromDatabase() {
-  const client = getSupabase();
-  if (!client) return;
-  const { data, error } = await client
-    .from('lessons')
-    .select('lesson_number, wistia_video_id')
-    .eq('course_id', APP_CONFIG.COURSE_ID);
-  if (error || !data) return;
-  data.forEach(row => {
-    if (row.wistia_video_id && !row.wistia_video_id.startsWith('WISTIA_VIDEO_ID')) {
-      dbVideoIds[row.lesson_number] = row.wistia_video_id;
-    }
-  });
 }
 
 function renderPlayerSidebar() {
@@ -262,8 +246,8 @@ function renderPlayerSidebar() {
         ${isCompleted ? (typeof ICONS !== 'undefined' ? ICONS.check : '✓') : String(lesson.number).padStart(2, '0')}
       </div>
       <div class="player-lesson-meta">
-        <h4>${lesson.title}</h4>
-        <span><span class="icon-inline">${clockIcon}</span>${lesson.duration}${isActive ? ' &bull; <em>Now playing</em>' : ''}</span>
+        <h4>${escapeHtml(lesson.title)}</h4>
+        <span><span class="icon-inline">${clockIcon}</span>${escapeHtml(lesson.duration)}${isActive ? ' &bull; <em>Now playing</em>' : ''}</span>
       </div>
     `;
 
@@ -349,7 +333,7 @@ function loadLessonContent(lessonNumber) {
   const chipStatus = document.getElementById('lesson-chip-status');
   const lessonDone = completedLessons.includes(lessonNumber);
   if (chipNumber) chipNumber.textContent = `Lesson ${lesson.number} of ${APP_CONFIG.LESSONS_DATA.length}`;
-  if (chipDuration) chipDuration.innerHTML = `<span class="icon-inline">${typeof ICONS !== 'undefined' ? ICONS.clock : ''}</span> ${lesson.duration}`;
+  if (chipDuration) chipDuration.innerHTML = `<span class="icon-inline">${typeof ICONS !== 'undefined' ? ICONS.clock : ''}</span> ${escapeHtml(lesson.duration)}`;
   if (chipStatus) {
     chipStatus.textContent = lessonDone ? 'Completed' : 'In progress';
     chipStatus.className = `lesson-chip ${lessonDone ? 'lesson-chip-success' : ''}`;
@@ -385,13 +369,13 @@ function renderWistiaPlayer(lesson) {
   const container = document.getElementById('wistia-embed-target');
   if (!container) return;
 
-  const wistiaId = dbVideoIds[lesson.number] || APP_CONFIG.WISTIA_VIDEOS[lesson.number] || lesson.wistiaId;
+  const wistiaId = lesson.wistiaId;
 
-  if (!wistiaId || wistiaId.startsWith('WISTIA_VIDEO_ID')) {
+  if (!isRealVideoId(wistiaId)) {
     container.innerHTML = `
       <div class="video-placeholder">
         <div class="video-placeholder-glow"></div>
-        <span class="video-placeholder-badge">Lesson ${lesson.number} &bull; ${lesson.duration}</span>
+        <span class="video-placeholder-badge">Lesson ${lesson.number} &bull; ${escapeHtml(lesson.duration)}</span>
         <div class="video-placeholder-play" aria-hidden="true">
           <svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg>
         </div>
@@ -408,7 +392,7 @@ function renderWistiaPlayer(lesson) {
       <div class="wistia_responsive_wrapper" style="height:100%;left:0;position:absolute;top:0;width:100%;">
         <iframe 
           src="https://fast.wistia.net/embed/iframe/${encodeURIComponent(wistiaId)}?videoFoam=true" 
-          title="${lesson.title}" 
+          title="${escapeHtml(lesson.title)}" 
           allow="autoplay; fullscreen" 
           allowtransparency="true" 
           frameborder="0" 
