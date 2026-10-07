@@ -1324,3 +1324,37 @@ img {
     width: 100%;
   }
 }
+
+/* ==============================================================================
+   FIXES: missing utility styles used by the JavaScript
+   ============================================================================== */
+.toast.toast-info {
+  border-left: 4px solid var(--accent-yellow);
+}
+
+.status-badge.pending {
+  background-color: rgba(251, 191, 36, 0.12);
+  color: #FBBF24;
+}
+
+.demo-mode-banner {
+  background: #3A2E05;
+  border-bottom: 1px solid rgba(245, 197, 66, 0.4);
+  color: #FDE68A;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  padding: 0.6rem 1rem;
+  text-align: center;
+}
+
+.demo-mode-banner code {
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+}
