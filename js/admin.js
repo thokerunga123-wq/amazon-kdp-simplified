@@ -19,8 +19,8 @@ async function initAdminDashboard() {
 
   attachAdminEventListeners();
   initAdminTabs();
+  await loadAdminLessons();   // first, so student progress uses the real lesson count
   await loadStudents();
-  await loadAdminLessons();
 }
 
 function getInitials(name) {
@@ -652,6 +652,9 @@ async function loadAdminLessons() {
   renderAdminLessons();
 }
 
+const ICON_UP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="18 15 12 9 6 15"></polyline></svg>';
+const ICON_DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+
 function renderAdminLessons() {
   const list = document.getElementById('admin-lessons-list');
   if (!list) return;
@@ -660,16 +663,25 @@ function renderAdminLessons() {
 
   const summary = document.getElementById('lessons-video-summary');
   if (summary) {
-    summary.textContent = `${withVideo} of ${lessons.length} videos added`;
-    summary.classList.toggle('is-complete', withVideo === lessons.length);
+    summary.textContent = `${lessons.length} lesson${lessons.length === 1 ? '' : 's'} · ${withVideo} with video`;
+    summary.classList.toggle('is-complete', lessons.length > 0 && withVideo === lessons.length);
+  }
+
+  if (!lessons.length) {
+    list.innerHTML = `<div class="admin-empty"><div class="admin-empty-title">No lessons yet.</div><div class="admin-empty-sub">Click <strong>Add lesson</strong> to create your first one.</div></div>`;
+    return;
   }
 
   list.innerHTML = '';
-  lessons.forEach(lesson => {
+  lessons.forEach((lesson, i) => {
     const hasVideo = isRealVideoId(lesson.wistiaId);
     const row = document.createElement('div');
     row.className = 'admin-lesson-row';
     row.innerHTML = `
+      <div class="admin-lesson-order">
+        <button class="admin-order-btn" onclick="moveLesson(${lesson.number}, -1)" ${i === 0 ? 'disabled' : ''} title="Move up" aria-label="Move lesson ${lesson.number} up">${ICON_UP}</button>
+        <button class="admin-order-btn" onclick="moveLesson(${lesson.number}, 1)" ${i === lessons.length - 1 ? 'disabled' : ''} title="Move down" aria-label="Move lesson ${lesson.number} down">${ICON_DOWN}</button>
+      </div>
       <div class="admin-lesson-thumb ${hasVideo ? 'has-video' : ''}">
         ${hasVideo
           ? `<img src="${getVideoThumbnail(lesson.wistiaId)}" alt="" loading="lazy" onerror="this.remove()">
@@ -682,24 +694,30 @@ function renderAdminLessons() {
           <strong>${escapeHtml(lesson.title)}</strong>
         </div>
         <div class="admin-lesson-meta">
-          <span>${escapeHtml(lesson.duration)}</span>
+          ${lesson.duration ? `<span>${escapeHtml(lesson.duration)}</span>` : ''}
           ${hasVideo
             ? `<span class="admin-video-tag is-set"><i class="dot dot-green"></i>${getVideoSourceLabel(lesson.wistiaId)} video</span>`
             : `<span class="admin-video-tag"><i class="dot dot-amber"></i>No video yet</span>`}
         </div>
       </div>
-      <button class="${hasVideo ? 'admin-btn-ghost' : 'admin-btn-solid'}" onclick="openLessonEditor(${lesson.number})">
-        ${hasVideo ? 'Edit' : 'Add video'}
-      </button>
+      <button class="admin-btn-ghost" onclick="openLessonEditor(${lesson.number})">Edit</button>
     `;
     list.appendChild(row);
   });
 }
 
+/**
+ * Lesson editor. lessonNumber = null creates a new lesson at the end.
+ */
 function openLessonEditor(lessonNumber) {
-  const lesson = APP_CONFIG.LESSONS_DATA.find(l => l.number === lessonNumber);
+  const isNew = lessonNumber === null || lessonNumber === undefined;
+  const nextNumber = APP_CONFIG.LESSONS_DATA.length + 1;
+  const lesson = isNew
+    ? { number: nextNumber, title: '', duration: '', description: '', notes: '', wistiaId: '' }
+    : APP_CONFIG.LESSONS_DATA.find(l => l.number === lessonNumber);
   const modalEl = document.getElementById('student-modal-body');
   if (!lesson || !modalEl) return;
+
   const currentId = isRealVideoId(lesson.wistiaId) ? lesson.wistiaId : '';
   const currentLink = !currentId ? '' : isYouTubeVideo(currentId)
     ? `https://youtu.be/${currentId.slice(3)}`
@@ -707,23 +725,15 @@ function openLessonEditor(lessonNumber) {
 
   modalEl.innerHTML = `
     <div class="admin-modal-title">
-      <span class="admin-muted">Lesson ${lesson.number}</span>
-      <h2>Edit lesson</h2>
+      <span class="admin-muted">Lesson ${lesson.number}${isNew ? ' (new)' : ''}</span>
+      <h2>${isNew ? 'Add a lesson' : 'Edit lesson'}</h2>
     </div>
 
     <form id="lesson-edit-form" class="admin-form" novalidate>
-      <div class="form-group">
-        <label class="form-label" for="le-video">Lesson video</label>
-        <input type="text" id="le-video" class="form-input" placeholder="Paste a YouTube or Wistia link or embed code" value="${escapeHtml(currentLink)}" autocomplete="off" spellcheck="false">
-        <span class="form-help" id="le-video-help">Paste a <strong>YouTube</strong> or <strong>Wistia</strong> link, or the embed code from their Share button.</span>
-      </div>
-
-      <div class="admin-video-preview" id="le-preview"></div>
-
       <div class="admin-form-row">
         <div class="form-group">
-          <label class="form-label" for="le-title">Title</label>
-          <input type="text" id="le-title" class="form-input" value="${escapeHtml(lesson.title)}" required maxlength="140">
+          <label class="form-label" for="le-title">Lesson title</label>
+          <input type="text" id="le-title" class="form-input" value="${escapeHtml(lesson.title)}" placeholder="e.g. How to Choose a Profitable Book Topic" required maxlength="140">
         </div>
         <div class="form-group admin-form-narrow">
           <label class="form-label" for="le-duration">Duration</label>
@@ -731,24 +741,33 @@ function openLessonEditor(lessonNumber) {
         </div>
       </div>
 
-      <details class="admin-more">
+      <div class="form-group">
+        <label class="form-label" for="le-video">Lesson video <span class="admin-muted">(optional)</span></label>
+        <input type="text" id="le-video" class="form-input" placeholder="Paste a YouTube or Wistia link or embed code" value="${escapeHtml(currentLink)}" autocomplete="off" spellcheck="false">
+        <span class="form-help" id="le-video-help">Paste a <strong>YouTube</strong> or <strong>Wistia</strong> link, or the embed code from their Share button. You can add it later.</span>
+      </div>
+
+      <div class="admin-video-preview" id="le-preview"></div>
+
+      <details class="admin-more" ${isNew ? 'open' : ''}>
         <summary>Description &amp; notes</summary>
         <div class="form-group">
           <label class="form-label" for="le-desc">Short description</label>
-          <textarea id="le-desc" class="form-input" rows="3" maxlength="600">${escapeHtml(lesson.description)}</textarea>
+          <textarea id="le-desc" class="form-input" rows="3" maxlength="600" placeholder="One or two sentences about what students will learn">${escapeHtml(lesson.description)}</textarea>
         </div>
         <div class="form-group">
           <label class="form-label" for="le-notes">Notes &amp; action steps</label>
-          <textarea id="le-notes" class="form-input" rows="8">${escapeHtml(lesson.notes)}</textarea>
+          <textarea id="le-notes" class="form-input" rows="7" placeholder="Key Takeaways:&#10;• First point&#10;• Second point&#10;• Action Step: What to do next">${escapeHtml(lesson.notes)}</textarea>
           <span class="form-help">Start a line with • to make it a bullet. A line starting with "• Action Step:" is highlighted.</span>
         </div>
       </details>
 
       <div class="admin-modal-actions">
-        ${currentId ? `<button type="button" class="btn btn-outline btn-sm admin-danger-outline" id="le-remove">Remove video</button>` : ''}
+        ${!isNew ? `<button type="button" class="btn btn-outline btn-sm admin-danger-outline" id="le-delete">Delete lesson</button>` : ''}
+        ${currentId ? `<button type="button" class="btn btn-outline btn-sm" id="le-remove">Remove video</button>` : ''}
         <span style="flex:1"></span>
         <button type="button" onclick="closeModal('student-detail-modal')" class="btn btn-outline btn-sm">Cancel</button>
-        <button type="submit" id="le-save" class="btn btn-primary btn-sm">Save lesson</button>
+        <button type="submit" id="le-save" class="btn btn-primary btn-sm">${isNew ? 'Add lesson' : 'Save lesson'}</button>
       </div>
     </form>
   `;
@@ -783,22 +802,25 @@ function openLessonEditor(lessonNumber) {
   if (removeBtn) {
     removeBtn.onclick = () => {
       videoInput.value = '';
-      preview.dataset.id = '';
       updatePreview();
       removeBtn.remove();
     };
   }
 
+  const deleteBtn = document.getElementById('le-delete');
+  if (deleteBtn) deleteBtn.onclick = () => deleteLesson(lesson.number);
+
   document.getElementById('lesson-edit-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    saveLesson(lessonNumber);
+    saveLesson(isNew ? null : lesson.number);
   });
 
   openModal('student-detail-modal');
-  setTimeout(() => videoInput.focus(), 50);
+  setTimeout(() => document.getElementById(isNew ? 'le-title' : 'le-video').focus(), 50);
 }
 
 async function saveLesson(lessonNumber) {
+  const isNew = lessonNumber === null;
   const raw = document.getElementById('le-video').value.trim();
   const videoId = raw ? parseVideoInput(raw) : null;
   if (raw && !videoId) {
@@ -807,17 +829,19 @@ async function saveLesson(lessonNumber) {
   }
   const title = document.getElementById('le-title').value.trim();
   if (!title) {
-    showToast("The lesson needs a title.", "error");
+    showToast("Please give the lesson a title.", "error");
+    document.getElementById('le-title').focus();
     return;
   }
 
+  const number = isNew ? APP_CONFIG.LESSONS_DATA.length + 1 : lessonNumber;
   const fields = {
     title,
     duration: document.getElementById('le-duration').value.trim() || '—',
     description: document.getElementById('le-desc').value.trim() || title,
     notes: document.getElementById('le-notes').value.replace(/\r\n/g, '\n').trim(),
-    // The database column is required, so "no video" is stored as the placeholder
-    wistia_video_id: videoId || `WISTIA_VIDEO_ID_${lessonNumber}`
+    // The database column is required, so "no video" is stored as a placeholder
+    wistia_video_id: videoId || `WISTIA_VIDEO_ID_${number}`
   };
 
   const saveBtn = document.getElementById('le-save');
@@ -825,26 +849,98 @@ async function saveLesson(lessonNumber) {
   saveBtn.textContent = 'Saving…';
 
   const client = getSupabase();
-  if (client) {
-    const { data, error } = await client
-      .from('lessons')
-      .update(fields)
-      .eq('course_id', APP_CONFIG.COURSE_ID)
-      .eq('lesson_number', lessonNumber)
-      .select('id');
+  let error = null;
 
-    if (error || !data || !data.length) {
-      console.error("Error saving lesson:", error);
-      showToast(error ? `Could not save: ${error.message}` : "Could not save: lesson not found in the database.", "error", 7000);
-      saveBtn.disabled = false;
-      saveBtn.textContent = 'Save lesson';
-      return;
+  if (client) {
+    if (isNew) {
+      ({ error } = await client.from('lessons').insert(Object.assign({
+        course_id: APP_CONFIG.COURSE_ID,
+        lesson_number: number,
+        active: true
+      }, fields)));
+    } else {
+      let data;
+      ({ data, error } = await client
+        .from('lessons')
+        .update(fields)
+        .eq('course_id', APP_CONFIG.COURSE_ID)
+        .eq('lesson_number', lessonNumber)
+        .select('id'));
+      if (!error && (!data || !data.length)) error = { message: 'lesson not found in the database.' };
     }
   } else {
-    saveDemoLessonOverride(lessonNumber, fields);
+    const rows = getDemoLessons();
+    if (isNew) {
+      rows.push(Object.assign({ lesson_number: number }, fields));
+    } else {
+      const row = rows.find(r => r.lesson_number === lessonNumber);
+      if (row) Object.assign(row, fields);
+    }
+    saveDemoLessons(rows);
+  }
+
+  if (error) {
+    console.error("Error saving lesson:", error);
+    showToast(`Could not save: ${error.message}`, "error", 7000);
+    saveBtn.disabled = false;
+    saveBtn.textContent = isNew ? 'Add lesson' : 'Save lesson';
+    return;
   }
 
   closeModal('student-detail-modal');
-  showToast(`Lesson ${lessonNumber} saved. Students will see the change right away.`, "success");
+  showToast(isNew ? `Lesson ${number} added. Students can see it now.` : `Lesson ${number} saved. Students will see the change right away.`, "success");
   await loadAdminLessons();
+}
+
+async function deleteLesson(lessonNumber) {
+  const lesson = APP_CONFIG.LESSONS_DATA.find(l => l.number === lessonNumber);
+  if (!lesson) return;
+  const ok = confirm(`Delete Lesson ${lessonNumber}: "${lesson.title}"?\n\nStudents' progress for this lesson will also be removed, and the lessons after it move up one number. This can't be undone.`);
+  if (!ok) return;
+
+  const client = getSupabase();
+  if (client) {
+    const { error } = await client.rpc('delete_lesson', { p_course: APP_CONFIG.COURSE_ID, p_number: lessonNumber });
+    if (error) {
+      console.error("Error deleting lesson:", error);
+      showToast(`Could not delete: ${error.message}`, "error", 7000);
+      return;
+    }
+  } else {
+    const rows = getDemoLessons().filter(r => r.lesson_number !== lessonNumber);
+    saveDemoLessons(rows);
+  }
+
+  closeModal('student-detail-modal');
+  showToast(`Lesson deleted.`, "success");
+  await loadAdminLessons();
+  await loadStudents();
+}
+
+let lessonMoveBusy = false;
+async function moveLesson(lessonNumber, direction) {
+  if (lessonMoveBusy) return;
+  const target = lessonNumber + direction;
+  if (target < 1 || target > APP_CONFIG.LESSONS_DATA.length) return;
+  lessonMoveBusy = true;
+
+  const client = getSupabase();
+  if (client) {
+    const { error } = await client.rpc('move_lesson', { p_course: APP_CONFIG.COURSE_ID, p_number: lessonNumber, p_direction: direction });
+    if (error) {
+      console.error("Error moving lesson:", error);
+      showToast(`Could not move the lesson: ${error.message}`, "error", 7000);
+      lessonMoveBusy = false;
+      return;
+    }
+  } else {
+    const rows = getDemoLessons();
+    const a = rows.find(r => r.lesson_number === lessonNumber);
+    const b = rows.find(r => r.lesson_number === target);
+    if (a && b) { a.lesson_number = target; b.lesson_number = lessonNumber; }
+    saveDemoLessons(rows);
+  }
+
+  await loadAdminLessons();
+  lessonMoveBusy = false;
 }

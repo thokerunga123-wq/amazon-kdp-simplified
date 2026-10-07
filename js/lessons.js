@@ -6,7 +6,7 @@
  * in Demo Mode or when the database can't be read (e.g. inactive students).
  */
 
-const DEMO_LESSON_OVERRIDES_KEY = 'kdp_demo_lesson_overrides';
+const DEMO_LESSONS_KEY = 'kdp_demo_lessons';
 let lessonsLoaded = false;
 
 function escapeHtml(text) {
@@ -97,32 +97,55 @@ function getVideoSourceLabel(stored) {
   return isYouTubeVideo(stored) ? 'YouTube' : 'Wistia';
 }
 
-function getDemoLessonOverrides() {
-  try {
-    return JSON.parse(localStorage.getItem(DEMO_LESSON_OVERRIDES_KEY) || '{}') || {};
-  } catch (e) {
-    return {};
-  }
+// The built-in lessons from js/config.js, used when the database can't be read
+const DEFAULT_LESSONS = APP_CONFIG.LESSONS_DATA.map(l => Object.assign({}, l));
+
+function configVideoFor(number, fallback) {
+  const cfgId = APP_CONFIG.WISTIA_VIDEOS && APP_CONFIG.WISTIA_VIDEOS[number];
+  return isRealVideoId(cfgId) ? cfgId : fallback;
 }
 
-function saveDemoLessonOverride(lessonNumber, fields) {
-  const all = getDemoLessonOverrides();
-  all[lessonNumber] = Object.assign({}, all[lessonNumber] || {}, fields);
-  try { localStorage.setItem(DEMO_LESSON_OVERRIDES_KEY, JSON.stringify(all)); } catch (e) {}
+// ---- Demo mode lesson storage (whole list, so lessons can be added/removed) ----
+function getDemoLessons() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DEMO_LESSONS_KEY) || 'null');
+    if (Array.isArray(saved) && saved.length) return saved;
+  } catch (e) {}
+  return DEFAULT_LESSONS.map(l => ({
+    lesson_number: l.number,
+    title: l.title,
+    description: l.description,
+    notes: l.notes,
+    duration: l.duration,
+    wistia_video_id: l.wistiaId
+  }));
+}
+
+function saveDemoLessons(rows) {
+  rows.sort((a, b) => a.lesson_number - b.lesson_number);
+  rows.forEach((r, i) => { r.lesson_number = i + 1; });
+  try { localStorage.setItem(DEMO_LESSONS_KEY, JSON.stringify(rows)); } catch (e) {}
+}
+
+function rowToLesson(row) {
+  return {
+    id: row.id,
+    number: row.lesson_number,
+    title: row.title || `Lesson ${row.lesson_number}`,
+    description: row.description || '',
+    notes: row.notes || '',
+    duration: row.duration || '',
+    wistiaId: isRealVideoId(row.wistia_video_id) ? row.wistia_video_id : configVideoFor(row.lesson_number, row.wistia_video_id)
+  };
 }
 
 /**
- * Loads lessons (database first, config as fallback) into APP_CONFIG.LESSONS_DATA
- * so every page uses the same, up-to-date content.
+ * Loads lessons (database first, built-in list as fallback) into
+ * APP_CONFIG.LESSONS_DATA so every page uses the same, up-to-date list.
+ * The database decides how many lessons there are.
  */
 async function loadCourseLessons(force = false) {
   if (lessonsLoaded && !force) return APP_CONFIG.LESSONS_DATA;
-
-  // Start from the built-in defaults; config video IDs fill in when set
-  const base = APP_CONFIG.LESSONS_DATA.map(l => {
-    const cfgId = APP_CONFIG.WISTIA_VIDEOS[l.number];
-    return Object.assign({}, l, { wistiaId: isRealVideoId(cfgId) ? cfgId : l.wistiaId });
-  });
 
   let rows = null;
   const client = getSupabase();
@@ -135,24 +158,18 @@ async function loadCourseLessons(force = false) {
       .order('lesson_number', { ascending: true });
     if (!error && Array.isArray(data) && data.length) rows = data;
   } else {
-    const overrides = getDemoLessonOverrides();
-    rows = Object.keys(overrides).map(n => Object.assign({ lesson_number: Number(n) }, overrides[n]));
+    rows = getDemoLessons();
   }
 
-  if (rows) {
-    rows.forEach(row => {
-      const lesson = base.find(l => l.number === row.lesson_number);
-      if (!lesson) return;
-      if (row.id) lesson.id = row.id;
-      if (row.title) lesson.title = row.title;
-      if (row.description) lesson.description = row.description;
-      if (row.notes) lesson.notes = row.notes;
-      if (row.duration) lesson.duration = row.duration;
-      if (isRealVideoId(row.wistia_video_id)) lesson.wistiaId = row.wistia_video_id;
-    });
-  }
+  const lessons = rows
+    ? rows.slice().sort((a, b) => a.lesson_number - b.lesson_number).map(rowToLesson)
+    : DEFAULT_LESSONS.map(l => Object.assign({}, l, { wistiaId: configVideoFor(l.number, l.wistiaId) }));
 
-  APP_CONFIG.LESSONS_DATA = base;
+  APP_CONFIG.LESSONS_DATA = lessons;
   lessonsLoaded = true;
-  return base;
+  return lessons;
+}
+
+function getLessonCount() {
+  return APP_CONFIG.LESSONS_DATA.length;
 }

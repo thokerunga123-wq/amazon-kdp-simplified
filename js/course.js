@@ -126,7 +126,7 @@ async function initDashboard() {
   const lessons = APP_CONFIG.LESSONS_DATA;
   const totalLessons = lessons.length;
   const completedCount = lessons.filter(l => completedNumbers.includes(l.number)).length;
-  const percent = Math.round((completedCount / totalLessons) * 100);
+  const percent = totalLessons ? Math.round((completedCount / totalLessons) * 100) : 0;
 
   // Progress ring
   setText('progress-percent', `${percent}%`);
@@ -138,6 +138,14 @@ async function initDashboard() {
   const ring = document.getElementById('dash-progress-ring');
   if (ring) ring.style.setProperty('--pct', percent);
   setText('dash-lessons-meta', `${totalLessons} lessons`);
+
+  if (!totalLessons) {
+    const list = document.getElementById('dashboard-lessons-list');
+    if (list) list.innerHTML = '<div class="admin-empty">Lessons are coming soon.</div>';
+    const cont = document.getElementById('btn-continue-learning');
+    if (cont) cont.hidden = true;
+    return;
+  }
 
   // Next lesson
   const next = lessons.find(l => !completedNumbers.includes(l.number)) || lessons[0];
@@ -207,15 +215,25 @@ async function initCoursePlayer() {
   currentUser = await requireCourseAccess();
   if (!currentUser) return;
 
+  await loadCourseLessons();
+
+  const total = APP_CONFIG.LESSONS_DATA.length;
+  const countEl = document.querySelector('.sidebar-count');
+  if (countEl) countEl.textContent = `${total} lesson${total === 1 ? '' : 's'}`;
+  if (!total) {
+    const title = document.getElementById('player-lesson-title');
+    if (title) title.textContent = 'No lessons yet. Check back soon.';
+    return;
+  }
+
   const urlParams = new URLSearchParams(window.location.search);
   const requestedLesson = parseInt(urlParams.get('lesson'), 10);
-  if (requestedLesson && requestedLesson >= 1 && requestedLesson <= APP_CONFIG.LESSONS_DATA.length) {
+  if (requestedLesson && requestedLesson >= 1 && requestedLesson <= total) {
     currentLessonNumber = requestedLesson;
   } else {
     currentLessonNumber = 1;
   }
 
-  await loadCourseLessons();
   completedLessons = await getStudentProgress(currentUser.id);
 
   renderPlayerSidebar();
@@ -260,7 +278,7 @@ function renderPlayerSidebar() {
 
   // Sidebar progress summary
   const total = APP_CONFIG.LESSONS_DATA.length;
-  const done = completedLessons.length;
+  const done = APP_CONFIG.LESSONS_DATA.filter(l => completedLessons.includes(l.number)).length;
   const fill = document.getElementById('sidebar-progress-fill');
   const text = document.getElementById('sidebar-progress-text');
   if (fill) fill.style.width = `${Math.round((done / total) * 100)}%`;

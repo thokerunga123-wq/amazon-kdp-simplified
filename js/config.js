@@ -18,7 +18,7 @@ const APP_CONFIG = {
   SELAR_CHECKOUT_URL: "https://selar.com/amazon-kdp-simplified",
 
   // WhatsApp Support Channel
-  WHATSAPP_SUPPORT_URL: "https://wa.me/256700000000?text=Hello%20Thokerunga,%20I%20have%20a%20question%20about%20Amazon%20KDP%20Simplified",
+  WHATSAPP_SUPPORT_URL: "https://wa.me/256789312286?text=Hello%20Thokerunga,%20I%20have%20a%20question%20about%20Amazon%20KDP%20Simplified",
 
   // Course Details
   COURSE_NAME: "Amazon KDP Simplified",
