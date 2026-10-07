@@ -15,7 +15,7 @@ const APP_CONFIG = {
   SUPABASE_ANON_KEY: "sb_publishable_5dRHSihnq1mCB4D33VHgkw_KFGb9NuI",
 
   // Selar Payment Link
-  SELAR_CHECKOUT_URL: "https://selar.co/m/amazon-kdp-simplified",
+  SELAR_CHECKOUT_URL: "https://selar.com/amazon-kdp-simplified",
 
   // WhatsApp Support Channel
   WHATSAPP_SUPPORT_URL: "https://wa.me/256700000000?text=Hello%20Thokerunga,%20I%20have%20a%20question%20about%20Amazon%20KDP%20Simplified",
