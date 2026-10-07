@@ -143,9 +143,11 @@
       }
 
       // Fetch progress
-      const completedList = await getStudentProgress(user.id);
-      document.getElementById('profile-completion-display').textContent = 
-        `${completedList.length} of 10 Lessons Finished (${Math.round((completedList.length/10)*100)}%)`;
+      await loadCourseLessons();
+      const total = APP_CONFIG.LESSONS_DATA.length;
+      const completedList = (await getStudentProgress(user.id)).filter(n => APP_CONFIG.LESSONS_DATA.some(l => l.number === n));
+      document.getElementById('profile-completion-display').textContent =
+        `${completedList.length} of ${total} lessons finished (${total ? Math.round((completedList.length / total) * 100) : 0}%)`;
 
       // Password form handler
       const passForm = document.getElementById('profile-password-form');
