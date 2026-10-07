@@ -3,174 +3,106 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student Dashboard | Amazon KDP Simplified</title>
-  <meta name="description" content="Access your 10 lessons, track progress, and access Book Formatter Pro.">
+  <title>My Course | Amazon KDP Simplified</title>
+  <meta name="description" content="Your Amazon KDP Simplified lessons and progress.">
+  <meta name="robots" content="noindex">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23F5C542'><path d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/><path d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/></svg>">
 </head>
-<body>
+<body class="admin-body student-body">
 
-  <!-- Site Header -->
-  <header class="site-header">
-    <div class="container nav-container">
-      <a href="dashboard.html" class="brand-logo">
+  <!-- Top bar -->
+  <header class="admin-topbar">
+    <div class="admin-topbar-inner student-topbar-inner">
+      <a href="dashboard.html" class="brand-logo admin-brand">
         <span class="icon-inline" style="color:var(--accent-yellow);">
           <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
         </span>
-        <span>Amazon <span class="logo-accent">KDP</span> Simplified</span>
-        <span class="logo-badge">Student Portal</span>
+        <span>KDP <span class="logo-accent">Simplified</span></span>
       </a>
 
-      <nav class="desktop-nav" aria-label="Main Navigation">
-        <a href="dashboard.html" class="nav-link active">Dashboard</a>
-        <a href="course.html" class="nav-link">Curriculum</a>
-        <a href="faq.html" class="nav-link">FAQ</a>
-      </nav>
-
-      <div class="nav-actions">
-        <!-- Rendered via auth.js -->
-      </div>
-
-      <button class="hamburger-btn" aria-label="Toggle navigation menu" aria-expanded="false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Mobile Drawer -->
-    <div class="mobile-nav-drawer">
-      <div class="mobile-nav-links">
-        <a href="dashboard.html" class="nav-link active">Dashboard</a>
-        <a href="profile.html" class="nav-link">My Profile</a>
-        <a href="course.html" class="nav-link">Curriculum</a>
-        <a href="faq.html" class="nav-link">FAQ</a>
-      </div>
-      <div class="mobile-nav-actions">
-        <button onclick="logoutUser()" class="btn btn-secondary btn-block">Log Out</button>
+      <div class="admin-topbar-actions">
+        <a href="admin.html" class="admin-link" id="dash-admin-link" hidden>
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span class="admin-hide-sm">Admin</span>
+        </a>
+        <a href="profile.html" class="admin-user admin-user-link" title="My account">
+          <span class="admin-avatar" id="dash-avatar">S</span>
+          <span class="admin-user-name admin-hide-sm" id="dash-user-name">Student</span>
+        </a>
+        <button onclick="logoutUser()" class="admin-icon-btn" title="Log out" aria-label="Log out">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </button>
       </div>
     </div>
   </header>
 
-  <main>
-    <!-- Welcome Header Bar -->
-    <section class="dashboard-header">
-      <div class="container dashboard-welcome">
-        <div class="dashboard-user-info">
-          <h1>Welcome, <span id="dash-student-name">Student</span></h1>
-          <p>Course: <strong>Amazon KDP Simplified</strong> &bull; Instructor: Thokerunga Innocent</p>
+  <main class="admin-main student-main">
+
+    <!-- Greeting + progress -->
+    <section class="dash-hero">
+      <div>
+        <p class="dash-eyebrow">Amazon KDP Simplified</p>
+        <h1>Welcome back, <span id="dash-student-name">Student</span></h1>
+      </div>
+      <div class="dash-progress" aria-label="Course progress">
+        <div class="dash-progress-ring" id="dash-progress-ring" style="--pct:0">
+          <span id="progress-percent">0%</span>
         </div>
-        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
-          <a href="#" class="btn btn-whatsapp btn-sm whatsapp-support-link">
-            <svg class="svg-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
-            <span>WhatsApp Group</span>
-          </a>
-          <a href="profile.html" class="btn btn-outline btn-sm">
-            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            <span>My Account</span>
-          </a>
+        <div>
+          <div class="dash-progress-title" id="progress-count">0 of 10 lessons completed</div>
+          <div class="dash-progress-sub" id="progress-sub">Let's get your first book started.</div>
         </div>
       </div>
     </section>
 
-    <!-- Main Content Area -->
-    <section class="section-sm">
-      <div class="container">
+    <!-- Access pending notice (only shown when needed) -->
+    <div id="enrollment-status-alert" class="dash-alert" hidden></div>
 
-        <!-- Enrollment Status Alert -->
-        <div id="enrollment-status-alert" style="display:none; margin-bottom:1.5rem;"></div>
+    <!-- Continue card -->
+    <a href="lesson.html?lesson=1" id="btn-continue-learning" class="dash-continue">
+      <div class="dash-continue-thumb" id="dash-continue-thumb">
+        <span class="dash-continue-play"><svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg></span>
+      </div>
+      <div class="dash-continue-body">
+        <span class="dash-continue-label" id="dash-continue-label">Start here</span>
+        <h2 id="dash-continue-title">Lesson 1</h2>
+        <p id="dash-continue-desc"></p>
+        <span class="dash-continue-cta"><span id="dash-continue-cta-text">Start lesson</span>
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </span>
+      </div>
+    </a>
 
-        <!-- Progress Overview Banner Card -->
-        <div class="progress-banner-card">
-          <div class="progress-info">
-            <h2 style="display:flex; align-items:center; gap:0.5rem;">
-              <span class="icon-inline" style="color:var(--accent-yellow);">
-                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-              </span>
-              <span>Course Completion Progress</span>
-            </h2>
-            <div class="progress-meta">
-              <span>Overall: <strong id="progress-percent" style="color:var(--accent-yellow);">0%</strong></span>
-              <span id="progress-count">0 of 10 Completed</span>
-              <span>Total Lessons: <strong>10</strong></span>
-            </div>
-            <div class="progress-bar-track">
-              <div id="progress-bar-fill" class="progress-bar-fill"></div>
-            </div>
-          </div>
-          <div>
-            <a href="lesson.html?lesson=1" id="btn-continue-learning" class="btn btn-primary btn-lg">
-              <span>Continue Learning</span>
-              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-            </a>
-          </div>
+    <!-- Lessons -->
+    <section class="dash-section">
+      <div class="dash-section-head">
+        <h2>All lessons</h2>
+        <span class="admin-muted" id="dash-lessons-meta">10 lessons</span>
+      </div>
+      <div class="admin-card">
+        <div id="dashboard-lessons-list" class="dash-lessons">
+          <div class="admin-empty">Loading lessons…</div>
         </div>
-
-        <!-- Student Quick Resources Cards -->
-        <h3 style="font-size:1.15rem; margin-bottom:1rem; color:var(--text-white); display:flex; align-items:center; gap:0.5rem;">
-          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent-yellow);"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-          <span>Exclusive Student Bonuses</span>
-        </h3>
-
-        <div class="student-resources-grid">
-          <div class="resource-card">
-            <div class="resource-card-info">
-              <h4>Book Formatter Pro Software</h4>
-              <p>Lesson 7 tool & tutorial to format clean KDP interiors</p>
-            </div>
-            <a href="lesson.html?lesson=7" class="btn btn-secondary btn-sm">
-              <span>Open Lesson</span>
-            </a>
-          </div>
-
-          <div class="resource-card">
-            <div class="resource-card-info">
-              <h4>WhatsApp Student Community</h4>
-              <p>Direct question & answer access with Thokerunga</p>
-            </div>
-            <a href="#" class="btn btn-whatsapp btn-sm whatsapp-support-link">
-              <span>Join Group</span>
-            </a>
-          </div>
-
-          <div class="resource-card">
-            <div class="resource-card-info">
-              <h4>KDP Publishing Checklist</h4>
-              <p>Pre-upload verification steps for Lesson 8</p>
-            </div>
-            <a href="lesson.html?lesson=8" class="btn btn-secondary btn-sm">
-              <span>View Checklist</span>
-            </a>
-          </div>
-        </div>
-
-        <!-- 10 Lessons List -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
-          <h2 style="font-size:1.4rem;">Course Lessons (10)</h2>
-          <span style="font-size:0.8125rem; color:var(--text-secondary-dark);">Self-paced video modules</span>
-        </div>
-
-        <div id="dashboard-lessons-list">
-          <!-- Dynamically populated by js/course.js -->
-        </div>
-
       </div>
     </section>
+
+    <!-- Single support card -->
+    <a href="#" class="dash-help whatsapp-support-link">
+      <span class="dash-help-icon">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+      </span>
+      <span class="dash-help-text">
+        <strong>Stuck on something?</strong>
+        <span>Ask Thokerunga directly on WhatsApp</span>
+      </span>
+      <svg class="svg-icon dash-help-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </a>
+
   </main>
 
-  <!-- Site Footer -->
-  <footer class="site-footer">
-    <div class="container">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; font-size:0.8125rem; color:var(--text-muted-dark);">
-        <div>&copy; <span class="current-year">2026</span> Thokerunga Innocent &bull; Amazon KDP Simplified</div>
-        <div>
-          <a href="profile.html" style="color:var(--text-muted-dark); margin-right:1rem;">My Account</a>
-          <a href="contact.html" style="color:var(--text-muted-dark);">Support</a>
-        </div>
-      </div>
-    </div>
+  <footer class="dash-footer">
+    &copy; <span class="current-year">2026</span> Thokerunga Innocent &bull; <a href="terms.html">Terms</a> &bull; <a href="privacy.html">Privacy</a>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.0/dist/umd/supabase.js"></script>
