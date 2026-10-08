@@ -107,6 +107,8 @@ async function initDashboard() {
   // Access pending notice
   const notice = document.getElementById('enrollment-status-alert');
   const hasAccess = user.is_admin || user.enrollment_status === 'active';
+  const resources = document.getElementById('dash-resources');
+  if (resources) resources.hidden = !hasAccess;
   if (notice) {
     notice.hidden = hasAccess;
     if (!hasAccess) {
@@ -349,6 +351,10 @@ function loadLessonContent(lessonNumber) {
   document.title = `Lesson ${lesson.number}: ${lesson.title} | Amazon KDP Simplified`;
   document.getElementById('player-lesson-desc').textContent = lesson.description;
   renderLessonNotes(document.getElementById('player-lesson-notes'), lesson.notes);
+
+  // Show the Book Formatter Pro download on the lesson that teaches it
+  const lessonResources = document.getElementById('lesson-resources');
+  if (lessonResources) lessonResources.hidden = !/book\s*formatter/i.test(`${lesson.title} ${lesson.description || ''}`);
 
   const chipNumber = document.getElementById('lesson-chip-number');
   const chipDuration = document.getElementById('lesson-chip-duration');
