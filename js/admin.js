@@ -48,7 +48,8 @@ function initAdminTabs() {
     }
   };
   tabs.forEach(t => t.addEventListener('click', () => show(t.dataset.tab)));
-  show(window.location.hash === '#lessons' ? 'lessons' : 'students');
+  const start = window.location.hash.slice(1);
+  show(['lessons', 'admins'].includes(start) ? start : 'students');
 }
 
 /**
