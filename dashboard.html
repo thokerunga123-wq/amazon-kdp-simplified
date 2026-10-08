@@ -89,6 +89,27 @@
       </div>
     </section>
 
+    <!-- Course resources (shown when access is active) -->
+    <section class="dash-section" id="dash-resources" hidden>
+      <div class="dash-section-head">
+        <h2>Course resources</h2>
+      </div>
+      <div class="res-card" data-resource="bookformatter">
+        <span class="res-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+        </span>
+        <div class="res-text">
+          <strong>Book Formatter Pro</strong>
+          <span>Format your manuscript into a print-ready KDP interior. Install on your Windows computer.</span>
+          <small data-res-meta>Checking for the latest version…</small>
+        </div>
+        <a href="https://github.com/thokerunga123-wq/bookformatterpro-plugins/releases?q=app-v&amp;expanded=true" class="res-download is-loading" data-res-download target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span data-res-label>Download</span>
+        </a>
+      </div>
+    </section>
+
     <!-- Single support card -->
     <a href="#" class="dash-help whatsapp-support-link">
       <span class="dash-help-icon">
@@ -114,6 +135,7 @@
   <script src="js/app.js"></script>
   <script src="js/lessons.js"></script>
   <script src="js/course.js"></script>
+  <script src="js/resources.js"></script>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
