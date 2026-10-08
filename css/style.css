@@ -4138,3 +4138,489 @@ a, button, input, select, textarea {
     display: none;
   }
 }
+
+/* ==============================================================================
+   BRAND LOGO IMAGE (all pages)
+   ============================================================================== */
+.brand-logo-img {
+  display: block;
+  height: 42px;
+  width: auto;
+}
+
+@media (max-width: 600px) {
+  .brand-logo-img { height: 34px; }
+}
+
+/* ==============================================================================
+   LOGIN PAGE V2 (index.html) - light design
+   ============================================================================== */
+.login-v2 {
+  --lv2-bg: #FBF8F1;
+  --lv2-ink: #111111;
+  --lv2-muted: #5F6368;
+  --lv2-yellow: #FFC928;
+  --lv2-yellow-deep: #F5B400;
+  --lv2-border: #E3E3E6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--lv2-bg);
+  color: var(--lv2-ink);
+  font-family: var(--font-body, 'Inter', sans-serif);
+}
+
+/* Header */
+.lv2-top {
+  background: #141414;
+  position: relative;
+  z-index: 5;
+}
+
+.lv2-top-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  height: 84px;
+  padding: 0 clamp(1rem, 5vw, 5.5rem);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.lv2-brand .brand-logo-img { height: 60px; }
+
+.lv2-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+}
+
+.lv2-top-note {
+  color: #FFFFFF;
+  font-size: 1.05rem;
+}
+
+.lv2-join {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.8rem 1.4rem;
+  border-radius: 10px;
+  background: var(--lv2-yellow);
+  color: #111111;
+  font-weight: 700;
+  font-size: 1.05rem;
+  white-space: nowrap;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.lv2-join:hover { filter: brightness(1.05); transform: translateY(-1px); }
+.lv2-join svg { width: 16px; height: 16px; }
+
+/* Layout */
+.lv2-main {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2.75rem clamp(1rem, 2.6vw, 2.5rem) 2.5rem clamp(1rem, 5.5vw, 5.5rem);
+  display: grid;
+  grid-template-columns: minmax(300px, 350px) minmax(0, 1fr) minmax(400px, 560px);
+  grid-template-areas:
+    "intro intro card"
+    "feat  art   card";
+  column-gap: 1.5rem;
+  row-gap: 1.5rem;
+  align-items: start;
+}
+
+.lv2-blob {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  left: -6%;
+  bottom: -2px;
+  width: 26%;
+  height: 17%;
+  border-top-right-radius: 100% 100%;
+  background: linear-gradient(135deg, #FFD54F 0%, #FFC928 100%);
+  opacity: 0.9;
+}
+
+.lv2-intro, .lv2-card, .lv2-features, .lv2-art { position: relative; z-index: 1; }
+
+.lv2-intro { grid-area: intro; padding-top: 2.25rem; }
+.lv2-card { grid-area: card; }
+.lv2-features { grid-area: feat; }
+.lv2-art { grid-column: 2; grid-row: 1 / 3; align-self: end; margin-left: -1.5rem; }
+.lv2-intro { z-index: 2; }
+
+.lv2-art::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 2%;
+  right: -12%;
+  top: 6%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #FFD95E 0%, #FFCB2E 70%, #FFC928 100%);
+  opacity: 0.85;
+}
+
+/* Intro */
+.lv2-eyebrow {
+  display: inline-block;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #1A1A1A;
+  margin: 0 0 1.6rem;
+  position: relative;
+}
+
+.lv2-eyebrow::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.7rem;
+  width: 64px;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--lv2-yellow);
+}
+
+.lv2-title {
+  font-family: var(--font-heading, 'Montserrat', sans-serif);
+  font-weight: 800;
+  font-size: clamp(2.6rem, 6.2vw, 5.6rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  color: #111111;
+  margin: 0 0 1.4rem;
+}
+
+.lv2-title span {
+  display: block;
+  color: var(--lv2-yellow);
+  background: linear-gradient(180deg, #FFCA2C 0%, #F5A700 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.lv2-sub {
+  font-size: clamp(1.05rem, 1.6vw, 1.55rem);
+  line-height: 1.4;
+  color: var(--lv2-muted);
+  max-width: 34ch;
+  margin: 0;
+}
+
+/* Features */
+.lv2-features {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0 0;
+  display: grid;
+  gap: 1.6rem;
+}
+
+.lv2-features li {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.lv2-feat-icon {
+  flex: none;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #FCE7A8;
+  color: #111111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lv2-feat-icon svg { width: 28px; height: 28px; }
+.lv2-feat-dollar { font-size: 1.7rem; font-weight: 700; }
+
+.lv2-features strong {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #111111;
+}
+
+.lv2-features li span:not(.lv2-feat-icon) {
+  display: block;
+  color: var(--lv2-muted);
+  font-size: 1.02rem;
+  margin-top: 0.15rem;
+}
+
+/* Illustration */
+.lv2-art img {
+  display: block;
+  width: 124%;
+  max-width: 640px;
+  height: auto;
+  margin: 0 0 0 -12%;
+}
+
+/* Card */
+.lv2-card {
+  background: #FFFFFF;
+  border-radius: 22px;
+  padding: clamp(1.75rem, 3.4vw, 3.4rem) clamp(1.4rem, 3vw, 2.9rem);
+  box-shadow: 0 30px 70px rgba(30, 24, 10, 0.08), 0 2px 6px rgba(30, 24, 10, 0.04);
+  margin-top: 0.25rem;
+}
+
+.lv2-card h2 {
+  font-family: var(--font-heading, 'Montserrat', sans-serif);
+  font-size: clamp(2rem, 3.2vw, 2.9rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #111111;
+  margin: 0 0 0.75rem;
+}
+
+.lv2-card-sub {
+  color: var(--lv2-muted);
+  font-size: 1.12rem;
+  line-height: 1.5;
+  margin: 0 0 2.2rem;
+}
+
+.login-v2 .login-alert {
+  color: #7F1D1D;
+  background: #FEF2F2;
+  border-color: #FCA5A5;
+}
+.login-v2 .login-alert strong { color: #991B1B; }
+.login-v2 .login-alert a { color: #B45309; }
+.login-v2 .login-alert.is-success { color: #065F46; background: #ECFDF5; border-color: #6EE7B7; }
+
+.lv2-field { margin-bottom: 1.6rem; }
+
+.lv2-field label {
+  display: block;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #111111;
+  margin-bottom: 0.7rem;
+}
+
+.lv2-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.lv2-forgot {
+  color: #F2AE00;
+  font-weight: 500;
+  font-size: 1.02rem;
+  margin-bottom: 0.7rem;
+}
+.lv2-forgot:hover { text-decoration: underline; }
+
+.lv2-input { position: relative; }
+
+.lv2-input-icon {
+  position: absolute;
+  left: 1.15rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  color: #6B7280;
+  pointer-events: none;
+}
+
+.lv2-input input {
+  width: 100%;
+  height: 60px;
+  padding: 0 3.5rem 0 3.6rem;
+  border: 1px solid var(--lv2-border);
+  border-radius: 10px;
+  background: #F5F5F6;
+  color: #111111;
+  font: inherit;
+  font-size: 1.08rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.lv2-input input::placeholder { color: #8A8F98; }
+
+.lv2-input input:focus {
+  outline: none;
+  background: #FFFFFF;
+  border-color: var(--lv2-yellow-deep);
+  box-shadow: 0 0 0 4px rgba(255, 201, 40, 0.25);
+}
+
+.login-v2 .lv2-eye { right: 0.6rem; color: #4B5563; }
+.login-v2 .lv2-eye:hover { color: #111111; background: #EDEDEF; }
+.login-v2 .lv2-eye svg { width: 22px; height: 22px; }
+
+.login-v2 .lv2-submit {
+  height: 66px;
+  margin-top: 0.5rem;
+  border-radius: 10px;
+  background: var(--lv2-yellow);
+  font-size: 1.2rem;
+  box-shadow: 0 10px 24px rgba(245, 180, 0, 0.22);
+}
+
+.lv2-arrow { width: 20px; height: 20px; flex: none; }
+.lv2-submit.is-loading .lv2-arrow { display: none; }
+
+.lv2-or {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0;
+  color: #6B7280;
+  font-size: 0.95rem;
+}
+
+.lv2-or::before, .lv2-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--lv2-border);
+}
+
+.lv2-whatsapp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  height: 66px;
+  border: 1px solid #D9D9DD;
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: #111111;
+  font-weight: 600;
+  font-size: 1.12rem;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.lv2-whatsapp:hover { border-color: #25D366; background: #F6FEF9; }
+.lv2-wa-icon { width: 34px; height: 34px; flex: none; }
+
+.lv2-device-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin: 1.8rem 0 0;
+  color: var(--lv2-muted);
+  font-size: 1.02rem;
+}
+
+.lv2-device-note svg { width: 20px; height: 20px; flex: none; }
+
+/* Footer */
+.lv2-footer {
+  position: relative;
+  z-index: 2;
+  background: #F2EEE6;
+  color: #333333;
+  font-size: 0.95rem;
+}
+
+.lv2-footer-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.1rem clamp(1rem, 5vw, 5.5rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  flex-wrap: wrap;
+}
+
+.lv2-footer nav { display: flex; align-items: center; gap: 0.9rem; }
+.lv2-footer nav span { color: #9CA3AF; }
+.lv2-footer a { color: #333333; }
+.lv2-footer a:hover { color: #000000; text-decoration: underline; }
+
+/* Laptop */
+@media (max-width: 1180px) {
+  .lv2-main {
+    grid-template-columns: minmax(0, 1fr) minmax(380px, 460px);
+    grid-template-areas:
+      "intro card"
+      "feat  card"
+      "art   card";
+  }
+  .lv2-art { grid-column: 1; grid-row: 3; align-self: start; margin-left: 0; }
+  .lv2-art img { width: 100%; max-width: 480px; margin: 0; }
+  .lv2-art::before { left: 10%; right: auto; width: 70%; top: 8%; }
+  .lv2-blob { display: none; }
+}
+
+/* Tablet & phone */
+@media (max-width: 860px) {
+  .lv2-top-inner { height: 64px; }
+  .lv2-brand .brand-logo-img { height: 40px; }
+  .lv2-top-note { display: none; }
+  .lv2-join { padding: 0.6rem 1rem; font-size: 0.95rem; }
+
+  .lv2-main {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "intro"
+      "card"
+      "art"
+      "feat";
+    padding-top: 1.75rem;
+    row-gap: 1.75rem;
+  }
+
+  .lv2-intro { padding-top: 0.5rem; }
+  .lv2-eyebrow { font-size: 0.8rem; margin-bottom: 1.3rem; }
+  .lv2-eyebrow::after { width: 48px; height: 3px; bottom: -0.55rem; }
+  .lv2-title { margin-bottom: 0.9rem; }
+  .lv2-sub { max-width: none; }
+
+  .lv2-card { border-radius: 18px; }
+  .lv2-card-sub { font-size: 1rem; margin-bottom: 1.6rem; }
+  .lv2-field { margin-bottom: 1.25rem; }
+  .lv2-field label, .lv2-forgot { font-size: 0.98rem; }
+  .lv2-input input { height: 54px; font-size: 1rem; }
+  .login-v2 .lv2-submit, .lv2-whatsapp { height: 58px; font-size: 1.05rem; }
+  .lv2-or { margin: 1.4rem 0; }
+  .lv2-device-note { font-size: 0.92rem; margin-top: 1.3rem; }
+
+  .lv2-art { grid-area: art; grid-column: auto; grid-row: auto; margin-left: 0; }
+  .lv2-art img { width: 100%; max-width: 520px; margin: 0 auto; }
+  .lv2-art::before { left: 50%; right: auto; width: min(70%, 360px); top: 10%; transform: translateX(-50%); }
+  .lv2-art { margin-bottom: 0.5rem; }
+
+  .lv2-features { gap: 1.1rem; padding-bottom: 0.5rem; }
+  .lv2-feat-icon { width: 50px; height: 50px; }
+  .lv2-feat-icon svg { width: 24px; height: 24px; }
+  .lv2-features strong { font-size: 1.05rem; }
+  .lv2-features li span:not(.lv2-feat-icon) { font-size: 0.95rem; }
+
+
+  .lv2-footer-inner { flex-direction: column; text-align: center; font-size: 0.88rem; }
+}
+
+@media (max-width: 400px) {
+  .lv2-join { padding: 0.55rem 0.8rem; font-size: 0.88rem; }
+  .lv2-brand .brand-logo-img { height: 34px; }
+  .lv2-whatsapp { gap: 0.6rem; font-size: 0.98rem; }
+  .lv2-wa-icon { width: 28px; height: 28px; }
+}
