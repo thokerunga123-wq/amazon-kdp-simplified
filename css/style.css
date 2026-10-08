@@ -4624,3 +4624,73 @@ a, button, input, select, textarea {
   .lv2-whatsapp { gap: 0.6rem; font-size: 0.98rem; }
   .lv2-wa-icon { width: 28px; height: 28px; }
 }
+
+/* --- Login v2: illustration scene exactly as in the design --- */
+.login-v2 { --lv2-bg: #FCFAF7; }
+.lv2-art::before { display: none; }
+.lv2-art img { width: 100%; max-width: 488px; margin: 0 auto; }
+
+@media (min-width: 1181px) {
+  .lv2-main {
+    max-width: none;
+    min-height: 57.68vw;
+    padding: 0 2.67vw 0 5.53vw;
+    grid-template-columns: minmax(0, 1fr) 36.46vw;
+    grid-template-areas:
+      "intro card"
+      "feat  card";
+    grid-template-rows: auto 1fr;
+    column-gap: 0;
+    row-gap: 0;
+  }
+
+  .lv2-intro { padding-top: 5vw; }
+  .lv2-title { font-size: clamp(2.6rem, 6.64vw, 8rem); margin-bottom: 1.4vw; }
+  .lv2-sub { font-size: clamp(1rem, 1.72vw, 1.9rem); max-width: 34ch; }
+
+  .lv2-card { margin-top: 3vw; align-self: start; }
+
+  .lv2-features { padding-top: 2.2vw; gap: 1.9vw; align-content: start; }
+  .lv2-features li { gap: 1.1vw; }
+  .lv2-feat-icon { width: 3.9vw; height: 3.9vw; min-width: 46px; min-height: 46px; }
+  .lv2-feat-icon svg { width: 1.8vw; height: 1.8vw; min-width: 22px; min-height: 22px; }
+  .lv2-feat-dollar { font-size: max(1.3rem, 1.75vw); }
+  .lv2-features strong { font-size: max(0.95rem, 1.2vw); }
+  .lv2-features li span:not(.lv2-feat-icon) { font-size: max(0.85rem, 1.07vw); }
+
+  .lv2-art {
+    position: absolute;
+    grid-area: auto;
+    left: 28.97vw;
+    bottom: 0;
+    width: 31.77vw;
+    margin: 0;
+    z-index: 1;
+  }
+  .lv2-art img { width: 100%; max-width: none; margin: 0; }
+
+  .lv2-blob {
+    display: block;
+    left: 0;
+    bottom: 0;
+    right: auto;
+    top: auto;
+    width: 22.14vw;
+    height: 10.61vw;
+    border-radius: 0;
+    transform: none;
+    opacity: 1;
+    background: linear-gradient(180deg, #FFDE77 0%, #FFDB6F 100%);
+    clip-path: polygon(0% 0%, 8.8% 14.1%, 17.6% 26.4%, 26.5% 37.4%, 35.3% 47.9%, 44.1% 55.8%, 52.9% 65%, 61.8% 73%, 70.6% 81%, 79.4% 87.7%, 88.2% 93%, 97.1% 98.8%, 100% 100%, 0% 100%);
+  }
+}
+@media (min-width: 1181px) {
+  .lv2-title { line-height: 0.98; margin-bottom: 1vw; }
+  .lv2-sub { max-width: 34.5vw; }
+}
+@media (max-width: 1180px) {
+  .lv2-art img {
+    -webkit-mask-image: linear-gradient(to right, #000 82%, transparent 100%);
+    mask-image: linear-gradient(to right, #000 82%, transparent 100%);
+  }
+}
