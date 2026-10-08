@@ -4694,3 +4694,73 @@ a, button, input, select, textarea {
     mask-image: linear-gradient(to right, #000 82%, transparent 100%);
   }
 }
+
+/* ==============================================================================
+   COURSE RESOURCES (dashboard + lesson page)
+   ============================================================================== */
+.dash-section[hidden], .lesson-resources[hidden] { display: none !important; }
+
+.lesson-resources { margin: 1.5rem 0; }
+
+.res-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #17171B 0%, #141417 100%);
+  border: 1px solid rgba(245, 197, 66, 0.28);
+}
+
+.res-icon {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(245, 197, 66, 0.12);
+  color: var(--accent-yellow);
+}
+
+.res-icon svg { width: 24px; height: 24px; }
+
+.res-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary-dark);
+}
+
+.res-text strong { color: #FFFFFF; font-size: 1rem; }
+.res-text small { color: var(--text-muted-dark, #71717A); font-size: 0.78rem; margin-top: 0.15rem; }
+
+.res-download {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.15rem;
+  border-radius: 10px;
+  background: var(--accent-yellow);
+  color: #111111;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.res-download:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.res-download svg { width: 18px; height: 18px; }
+.res-download.is-loading { opacity: 0.7; }
+
+@media (max-width: 600px) {
+  .res-card { flex-wrap: wrap; }
+  .res-text { flex-basis: calc(100% - 64px); }
+  .res-download { width: 100%; justify-content: center; padding: 0.85rem 1rem; }
+}
